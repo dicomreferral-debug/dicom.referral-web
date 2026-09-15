@@ -269,7 +269,13 @@
 
         // 7. ฟังก์ชันหลักในการยิงไฟล์ขนาดใหญ่ขึ้น Google Drive
         async function uploadLargeFileToDrive(file, expireDateStr, progressTextPrefix) {
-            const payload = { action: "getUploadUrl", fileName: file.name, mimeType: file.type || "application/octet-stream", expireDate: expireDateStr };
+            const payload = { 
+                action: "getUploadUrl", 
+                fileName: file.name, 
+                mimeType: file.type || "application/octet-stream", 
+                expireDate: expireDateStr,
+                origin: window.location.origin // 🛑 เพิ่มบรรทัดนี้ เพื่อส่งชื่อโดเมนเว็บไปให้ฝั่ง GAS
+            };
             const res = await fetch(GAS_WEB_APP_URL, { method: 'POST', body: JSON.stringify(payload) });
             const result = await res.json();
             
