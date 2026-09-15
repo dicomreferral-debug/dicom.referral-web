@@ -1,10 +1,10 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="th">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ระบบส่งต่อภาพ DICOM</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
@@ -14,19 +14,21 @@
     <!-- Login -->
     <div id="login-section" class="max-w-md mx-auto mt-20 bg-white p-8 rounded-lg shadow-md">
         <h2 class="text-2xl font-bold mb-6 text-center text-blue-600">เข้าสู่ระบบส่งต่อข้อมูล</h2>
-        <input type="email" id="email" placeholder="อีเมลโรงพยาบาล" class="w-full mb-4 p-3 border rounded">
-        <input type="password" id="password" placeholder="รหัสผ่าน" class="w-full mb-6 p-3 border rounded">
-        <button onclick="login()" class="w-full bg-blue-600 text-white p-3 rounded font-bold hover:bg-blue-700">เข้าสู่ระบบ</button>
+        <form id="login-form">
+            <input type="email" id="email" placeholder="อีเมลโรงพยาบาล" required class="w-full mb-4 p-3 border rounded">
+            <input type="password" id="password" placeholder="รหัสผ่าน" required class="w-full mb-6 p-3 border rounded">
+            <button type="submit" id="btn-login" class="w-full bg-blue-600 text-white p-3 rounded font-bold hover:bg-blue-700">เข้าสู่ระบบ</button>
+        </form>
     </div>
 
     <!-- Dashboard -->
     <div id="dashboard-section" class="hidden max-w-6xl mx-auto mt-10 bg-white p-6 rounded-lg shadow-md">
         <div class="flex justify-between items-center mb-6 border-b pb-4">
             <h1 class="text-xl font-bold text-gray-800">ระบบส่งต่อภาพ DICOM (บัญชี: <span id="current-hospital" class="text-blue-600"></span>)</h1>
-            <button onclick="logout()" class="bg-red-500 text-white px-4 py-2 rounded text-sm hover:bg-red-600">ออกจากระบบ</button>
+            <button id="btn-logout" class="bg-red-500 text-white px-4 py-2 rounded text-sm hover:bg-red-600">ออกจากระบบ</button>
         </div>
 
-        <button onclick="openUploadModal()" class="bg-blue-600 text-white px-4 py-2 rounded font-bold mb-4 hover:bg-blue-700">
+        <button id="btn-open-upload" class="bg-blue-600 text-white px-4 py-2 rounded font-bold mb-4 hover:bg-blue-700">
             + สร้างรายการส่งต่อใหม่
         </button>
 
@@ -49,7 +51,7 @@
 
     <!-- Modal ดูผลอ่าน -->
     <div id="detail-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-40">
-        <div class="bg-white rounded-lg max-w-4xl w-full p-6 relative h-[90vh] flex flex-col">
+        <div class="bg-white rounded-lg max-w-4xl w-full p-6 relative flex flex-col" style="height: 90vh;">
             <div id="printable-area" class="flex-grow flex flex-col overflow-y-auto pr-2">
                 <h2 class="text-2xl font-bold mb-4 text-blue-600">รายละเอียดข้อมูลผู้ป่วย</h2>
                 <div class="grid grid-cols-2 gap-4 mb-4">
@@ -64,12 +66,12 @@
                 </div>
                 <div class="flex-grow flex flex-col">
                     <strong>ผลอ่านเอกซเรย์ (PDF):</strong>
-                    <iframe id="modal-pdf-viewer" src="" class="w-full border mt-2 flex-grow min-h-[400px]"></iframe>
+                    <iframe id="modal-pdf-viewer" src="" class="w-full border mt-2 flex-grow" style="min-height: 400px;"></iframe>
                 </div>
             </div>
             <div class="flex justify-end space-x-3 border-t pt-4 mt-4">
                 <button onclick="window.print()" class="bg-green-600 text-white px-4 py-2 rounded font-bold hover:bg-green-700">🖨️ พิมพ์</button>
-                <button onclick="closeModal('detail-modal')" class="bg-gray-500 text-white px-4 py-2 rounded font-bold hover:bg-gray-600">ปิด</button>
+                <button id="btn-close-detail" class="bg-gray-500 text-white px-4 py-2 rounded font-bold hover:bg-gray-600">ปิด</button>
             </div>
         </div>
     </div>
@@ -78,7 +80,7 @@
     <div id="upload-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
         <div class="bg-white rounded-lg max-w-2xl w-full p-6">
             <h2 class="text-2xl font-bold mb-6 text-blue-600">ฟอร์มส่งต่อข้อมูล</h2>
-            <form id="upload-form" onsubmit="handleUploadSubmit(event)">
+            <form id="upload-form">
                 <div class="grid grid-cols-2 gap-4 mb-4">
                     <div>
                         <label class="block text-sm font-bold mb-1">HN</label>
@@ -94,8 +96,8 @@
                         <label class="block text-sm font-bold mb-1">โรงพยาบาลปลายทาง</label>
                         <select id="upload-receiver" required class="w-full p-2 border rounded">
                             <option value="">-- เลือกโรงพยาบาล --</option>
-                            <option value="hospital_a@referral.com">โรงพยาบาลวิเชียรบุรี</option>
-                            <option value="hospital_b@referral.com">โรงพยาบาลเครือข่าย</option>
+                            <option value="hospital_a@referral.com">โรงพยาบาลเครือข่าย A</option>
+                            <option value="xray.wichian@gmail.com">โรงพยาบาลวิเชียรบุรี</option>
                         </select>
                     </div>
                     <div>
@@ -123,53 +125,75 @@
 
                 <div class="flex justify-end space-x-3 border-t pt-4">
                     <button type="submit" id="btn-submit" class="bg-blue-600 text-white px-6 py-2 rounded font-bold hover:bg-blue-700">ส่งข้อมูล</button>
-                    <button type="button" onclick="closeModal('upload-modal')" class="bg-gray-400 text-white px-6 py-2 rounded font-bold hover:bg-gray-500">ยกเลิก</button>
+                    <button type="button" id="btn-cancel-upload" class="bg-gray-400 text-white px-6 py-2 rounded font-bold hover:bg-gray-500">ยกเลิก</button>
                 </div>
             </form>
         </div>
     </div>
 
     <script>
-        // =========================================================================
-        // 🚨 อัปเดตข้อมูลจาก firebaseConfig.txt และ URL ของ GAS.txt แล้ว 🚨
-        // =========================================================================
-        
         const firebaseConfig = {
-            apiKey: "AIzaSyDQSXj3-ojPsXbs2i7udVIVPL2E-byCBQc",
+            apiKey: "AIzaSyDQSXj3-ojPsXbs2I7udVIVPL2E-bYCBQc",
             authDomain: "dicom-referral.firebaseapp.com",
             projectId: "dicom-referral",
             storageBucket: "dicom-referral.firebasestorage.app",
             messagingSenderId: "1013234791188",
-            appId: "1:1013234791188:web:f169e4602dbf4735e40801",
-            measurementId: "G-304XVHFND5"
+            appId: "1:1013234791188:web:f169e4602dbf4735e48801",
+            measurementId: "G-304XVHFNDS"
         };
-        
         const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzb9CDH1obwUDmv_qU_zJay-T8LeYEVmDT916N4hAP7LBz2mEJapfFpaxAdBeqr9DyT8g/exec"; 
-        
-        // =========================================================================
 
         firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
         const db = firebase.firestore();
 
-        function login() {
-            auth.signInWithEmailAndPassword(document.getElementById('email').value, document.getElementById('password').value)
-                .catch(err => alert("Login ล้มเหลว: " + err.message));
-        }
+        // จัดการ Login ด้วย Event Listener โดยตรง
+        document.getElementById('login-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const email = document.getElementById('email').value.trim();
+            const password = document.getElementById('password').value;
+            const btn = document.getElementById('btn-login');
+
+            btn.disabled = true;
+            btn.innerText = "กำลังเข้าสู่ระบบ...";
+
+            auth.signInWithEmailAndPassword(email, password)
+                .catch(err => {
+                    alert("เข้าสู่ระบบไม่สำเร็จ: " + err.message);
+                    btn.disabled = false;
+                    btn.innerText = "เข้าสู่ระบบ";
+                });
+        });
+
+        document.getElementById('btn-logout').addEventListener('click', () => auth.signOut());
+        document.getElementById('btn-open-upload').addEventListener('click', () => {
+            document.getElementById('upload-modal').classList.remove('hidden');
+        });
+        document.getElementById('btn-cancel-upload').addEventListener('click', () => {
+            document.getElementById('upload-modal').classList.add('hidden');
+            document.getElementById('upload-form').reset();
+        });
+        document.getElementById('btn-close-detail').addEventListener('click', () => {
+            document.getElementById('detail-modal').classList.add('hidden');
+        });
 
         auth.onAuthStateChanged(user => {
+            const loginSection = document.getElementById('login-section');
+            const dashboardSection = document.getElementById('dashboard-section');
+            const btnLogin = document.getElementById('btn-login');
+
             if (user) {
-                document.getElementById('login-section').classList.add('hidden');
-                document.getElementById('dashboard-section').classList.remove('hidden');
+                loginSection.classList.add('hidden');
+                dashboardSection.classList.remove('hidden');
                 document.getElementById('current-hospital').innerText = user.email;
                 loadReferrals(user.email);
             } else {
-                document.getElementById('login-section').classList.remove('hidden');
-                document.getElementById('dashboard-section').classList.add('hidden');
+                loginSection.classList.remove('hidden');
+                dashboardSection.classList.add('hidden');
+                btnLogin.disabled = false;
+                btnLogin.innerText = "เข้าสู่ระบบ";
             }
         });
-
-        function logout() { auth.signOut(); }
 
         function loadReferrals(email) {
             db.collection("referrals").orderBy("createdAt", "desc").onSnapshot(snapshot => {
@@ -180,26 +204,26 @@
                 snapshot.forEach(doc => {
                     const data = doc.data();
                     const expireDate = data.expireAt ? new Date(data.expireAt.seconds * 1000) : new Date();
-                    
-                    // ซ่อนข้อมูลอัตโนมัติหากเกินวันที่กำหนด
-                    if (now > expireDate) return; 
+                    if (now > expireDate) return;
 
                     if (data.receiverHospital === email || data.senderHospital === email) {
                         const isInbox = data.receiverHospital === email;
-                        const status = isInbox ? `<span class="bg-green-100 text-green-800 px-2 py-1 rounded text-xs font-bold">รับเข้า</span>` : `<span class="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs font-bold">ส่งออก</span>`;
+                        const status = isInbox ? '<span class="bg-green-100 text-green-800 px-2 py-1 rounded text-xs font-bold">รับเข้า</span>' : '<span class="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs font-bold">ส่งออก</span>';
                         const dateStr = data.createdAt ? new Date(data.createdAt.seconds * 1000).toLocaleString('th-TH') : '';
                         
-                        listEl.innerHTML += `
-                            <tr class="border-b hover:bg-gray-50">
-                                <td class="p-3 border">${status}</td>
-                                <td class="p-3 border">${dateStr}</td>
-                                <td class="p-3 border">${data.hn}</td>
-                                <td class="p-3 border">${data.patientName}</td>
-                                <td class="p-3 border text-sm">จาก: ${data.senderHospital}<br>ถึง: ${data.receiverHospital}</td>
-                                <td class="p-3 border">
-                                    <button onclick='openDetailModal(${JSON.stringify(data)})' class="bg-blue-500 text-white px-3 py-1 rounded text-sm hover:bg-blue-600 font-bold">เปิดดู</button>
-                                </td>
-                            </tr>`;
+                        const row = document.createElement('tr');
+                        row.className = "border-b hover:bg-gray-50";
+                        row.innerHTML = `
+                            <td class="p-3 border">${status}</td>
+                            <td class="p-3 border">${dateStr}</td>
+                            <td class="p-3 border">${data.hn}</td>
+                            <td class="p-3 border">${data.patientName}</td>
+                            <td class="p-3 border text-sm">จาก: ${data.senderHospital}<br>ถึง: ${data.receiverHospital}</td>
+                            <td class="p-3 border">
+                                <button class="btn-view bg-blue-500 text-white px-3 py-1 rounded text-sm hover:bg-blue-600 font-bold">เปิดดู</button>
+                            </td>`;
+                        row.querySelector('.btn-view').addEventListener('click', () => openDetailModal(data));
+                        listEl.appendChild(row);
                     }
                 });
             });
@@ -215,13 +239,6 @@
             document.getElementById('detail-modal').classList.remove('hidden');
         }
 
-        function openUploadModal() { document.getElementById('upload-modal').classList.remove('hidden'); }
-        function closeModal(id) { 
-            document.getElementById(id).classList.add('hidden'); 
-            if(id === 'upload-modal') document.getElementById('upload-form').reset();
-        }
-
-       // ฟังก์ชันอัปโหลดไฟล์ แก้ไขเรื่อง Network Error
         async function uploadLargeFileToDrive(file, expireDateStr, progressTextPrefix) {
             const payload = { action: "getUploadUrl", fileName: file.name, mimeType: file.type || "application/octet-stream", expireDate: expireDateStr };
             const res = await fetch(GAS_WEB_APP_URL, { method: 'POST', body: JSON.stringify(payload) });
@@ -232,10 +249,6 @@
             return new Promise((resolve, reject) => {
                 const xhr = new XMLHttpRequest();
                 xhr.open('PUT', result.uploadUrl, true);
-                
-                // 🛑 บรรทัดนี้สำคัญมาก! ช่วยแก้ปัญหา Network Error เวลายิงไฟล์ .rar เข้า Google
-                xhr.setRequestHeader('Content-Type', file.type || 'application/octet-stream'); 
-
                 xhr.upload.onprogress = e => {
                     if (e.lengthComputable) {
                         const percent = Math.round((e.loaded / e.total) * 100);
@@ -249,13 +262,12 @@
                         resolve({ fileId: uploaded.id, fileUrl: `https://drive.google.com/file/d/${uploaded.id}/view` });
                     } else reject(new Error(`อัปโหลดล้มเหลว (Status: ${xhr.status})`));
                 };
-                xhr.onerror = () => reject(new Error("Network Error - ขัดข้องเรื่องเครือข่าย หรือเบราว์เซอร์บล็อกการส่งข้อมูล"));
+                xhr.onerror = () => reject(new Error("การเชื่อมต่อไปยังเซิร์ฟเวอร์ Drive ขัดข้อง"));
                 xhr.send(file);
             });
         }
 
-        // ฟังก์ชันเมื่อกดปุ่มส่งข้อมูล
-        async function handleUploadSubmit(event) {
+        document.getElementById('upload-form').addEventListener('submit', async function(event) {
             event.preventDefault();
             const btnSubmit = document.getElementById('btn-submit');
             btnSubmit.disabled = true;
@@ -270,15 +282,12 @@
                 const pdfFile = document.getElementById('upload-pdf').files[0];
                 const zipFile = document.getElementById('upload-zip').files[0];
 
-                // 1. เริ่มอัปโหลด PDF
                 document.getElementById('upload-progress-bar').style.width = '0%';
                 const pdfResult = await uploadLargeFileToDrive(pdfFile, expireDateStr, "1/2 กำลังอัปโหลดผลอ่าน:");
                 
-                // 2. เริ่มอัปโหลด ZIP/RAR
-                document.getElementById('upload-progress-bar').style.width = '0%'; // รีเซ็ตหลอดโหลดใหม่
+                document.getElementById('upload-progress-bar').style.width = '0%';
                 const zipResult = await uploadLargeFileToDrive(zipFile, expireDateStr, "2/2 กำลังอัปโหลดภาพ:");
 
-                // 3. บันทึกลง Firebase (เมื่ออัปโหลดไฟล์ผ่านทั้งคู่)
                 document.getElementById('upload-progress-text').innerText = "กำลังบันทึกข้อมูลเข้าสู่ระบบ...";
                 await db.collection("referrals").add({
                     hn: document.getElementById('upload-hn').value,
@@ -292,7 +301,8 @@
                 });
 
                 alert("ส่งต่อข้อมูลสำเร็จ!");
-                closeModal('upload-modal');
+                document.getElementById('upload-modal').classList.add('hidden');
+                document.getElementById('upload-form').reset();
             } catch (error) {
                 alert("เกิดข้อผิดพลาด: " + error.message);
             } finally {
@@ -300,7 +310,7 @@
                 document.getElementById('upload-progress-container').classList.add('hidden');
                 document.getElementById('upload-progress-bar').style.width = '0%';
             }
-        }
+        });
     </script>
 </body>
 </html>
