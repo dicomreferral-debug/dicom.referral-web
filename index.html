@@ -131,7 +131,7 @@
     </div>
 
     <script>
-        // ข้อมูลการเชื่อมต่อ
+        // ข้อมูลการเชื่อมต่อ (ตัวเดิมของคุณทั้งหมด)
         const firebaseConfig = {
               apiKey: "AIzaSyDQSXj3-ojPsXbs2i7udVIVPL2E-byCBQc",
               authDomain: "dicom-referral.firebaseapp.com",
@@ -267,33 +267,75 @@
             document.getElementById('detail-modal').classList.remove('hidden');
         }
 
-        // 7. ฟังก์ชันหลักในการยิงไฟล์ขนาดใหญ่ขึ้น Google Drive
-        async function uploadLargeFileToDrive(file, expireDateStr, progressTextPrefix) {
-            const payload = { action: "getUploadUrl", fileName: file.name, mimeType: file.type || "application/octet-stream", expireDate: expireDateStr };
-            const res = await fetch(GAS_WEB_APP_URL, { method: 'POST', body: JSON.stringify(payload) });
-            const result = await res.json();
-            
-            if (!result.uploadUrl) throw new Error("ไม่สามารถสร้าง URL อัปโหลด");
-
+        // ==========================================
+        // 7. ส่วนใหม่: ฟังก์ชันหั่นไฟล์ (Chunked Upload) 
+        // ==========================================
+        
+        // ฟังก์ชันช่วยแปลงข้อมูลแต่ละก้อนเป็น Base64
+        function getBase64(fileBlob) {
             return new Promise((resolve, reject) => {
-                const xhr = new XMLHttpRequest();
-                xhr.open('PUT', result.uploadUrl, true);
-                xhr.upload.onprogress = e => {
-                    if (e.lengthComputable) {
-                        const percent = Math.round((e.loaded / e.total) * 100);
-                        document.getElementById('upload-progress-bar').style.width = percent + '%';
-                        document.getElementById('upload-progress-text').innerText = `${progressTextPrefix} ${file.name} (${percent}%)`;
-                    }
-                };
-                xhr.onload = () => {
-                    if (xhr.status === 200 || xhr.status === 201) {
-                        const uploaded = JSON.parse(xhr.responseText);
-                        resolve({ fileId: uploaded.id, fileUrl: `https://drive.google.com/file/d/${uploaded.id}/view` });
-                    } else reject(new Error(`อัปโหลดล้มเหลว (Status: ${xhr.status})`));
-                };
-                xhr.onerror = () => reject(new Error("การเชื่อมต่อไปยังเซิร์ฟเวอร์ Drive ขัดข้อง"));
-                xhr.send(file);
+                const reader = new FileReader();
+                reader.readAsDataURL(fileBlob);
+                reader.onload = () => resolve(reader.result.split(',')[1]);
+                reader.onerror = error => reject(error);
             });
+        }
+
+        // ฟังก์ชันหั่นไฟล์ส่งแบบ Chunked Upload (รองรับไฟล์ใหญ่มาก ทะลุบล็อก CORS)
+        async function uploadLargeFileToDrive(file, expireDateStr, progressTextPrefix) {
+            const chunkSize = 2 * 1024 * 1024; // หั่นไฟล์ส่งทีละ 2MB 
+            let start = 0;
+
+            document.getElementById('upload-progress-text').innerText = `${progressTextPrefix} กำลังเตรียมพื้นที่เชื่อมต่อ...`;
+
+            // 1. ขอ URL สำหรับเริ่มอัปโหลด
+            const initRes = await fetch(GAS_WEB_APP_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // ใช้ text/plain เลี่ยงปัญหา CORS
+                body: JSON.stringify({ action: "initUpload", fileName: file.name, mimeType: file.type || "application/octet-stream", expireDate: expireDateStr })
+            });
+            const initData = await initRes.json();
+            
+            if (initData.status !== "success") {
+                throw new Error("สร้างลิงก์อัปโหลดไม่สำเร็จ กรุณาตรวจสอบโค้ดใน Google Apps Script");
+            }
+            const uploadUrl = initData.uploadUrl;
+
+            // 2. ลูปหั่นไฟล์ส่งทีละก้อน
+            while (start < file.size) {
+                let end = start + chunkSize - 1;
+                if (end >= file.size) end = file.size - 1;
+                
+                const chunk = file.slice(start, end + 1);
+                const base64Chunk = await getBase64(chunk);
+
+                const chunkRes = await fetch(GAS_WEB_APP_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify({
+                        action: "uploadChunk",
+                        uploadUrl: uploadUrl,
+                        base64Data: base64Chunk,
+                        start: start,
+                        end: end,
+                        totalSize: file.size
+                    })
+                });
+                
+                const chunkData = await chunkRes.json();
+
+                const percent = Math.round(((end + 1) / file.size) * 100);
+                document.getElementById('upload-progress-bar').style.width = percent + '%';
+                document.getElementById('upload-progress-text').innerText = `${progressTextPrefix} ${file.name} (${percent}%)`;
+
+                if (chunkData.status === "success") {
+                    return { fileId: chunkData.fileId, fileUrl: `https://drive.google.com/file/d/${chunkData.fileId}/view` };
+                } else if (chunkData.status === "error") {
+                    throw new Error(chunkData.message);
+                }
+
+                start = end + 1;
+            }
         }
 
         // 8. ทำงานเมื่อกดปุ่ม "ส่งข้อมูล"
