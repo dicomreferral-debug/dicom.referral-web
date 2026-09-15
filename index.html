@@ -291,7 +291,6 @@
             // 1. ขอ URL สำหรับเริ่มอัปโหลด
             const initRes = await fetch(GAS_WEB_APP_URL, {
                 method: 'POST',
-                headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // ใช้ text/plain เลี่ยงปัญหา CORS
                 body: JSON.stringify({ action: "initUpload", fileName: file.name, mimeType: file.type || "application/octet-stream", expireDate: expireDateStr })
             });
             const initData = await initRes.json();
@@ -311,7 +310,6 @@
 
                 const chunkRes = await fetch(GAS_WEB_APP_URL, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                     body: JSON.stringify({
                         action: "uploadChunk",
                         uploadUrl: uploadUrl,
