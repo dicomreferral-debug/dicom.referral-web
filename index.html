@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ระบบส่งต่อภาพ DICOM - แผนกรังสีวิทยา</title>
+    <title>ระบบส่งต่อภาพ DICOM - โรงพยาบาลวิเชียรบุรี</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
@@ -11,7 +11,7 @@
 </head>
 <body class="bg-gray-100 font-sans">
 
-    <!-- Login Section -->
+    <!-- Login -->
     <div id="login-section" class="max-w-md mx-auto mt-20 bg-white p-8 rounded-lg shadow-md">
         <h2 class="text-2xl font-bold mb-6 text-center text-blue-600">เข้าสู่ระบบส่งต่อข้อมูล</h2>
         <form id="login-form">
@@ -21,7 +21,7 @@
         </form>
     </div>
 
-    <!-- Dashboard Section -->
+    <!-- Dashboard -->
     <div id="dashboard-section" class="hidden max-w-6xl mx-auto mt-10 bg-white p-6 rounded-lg shadow-md">
         <div class="flex justify-between items-center mb-6 border-b pb-4">
             <h1 class="text-xl font-bold text-gray-800">ระบบส่งต่อภาพ DICOM (บัญชี: <span id="current-hospital" class="text-blue-600"></span>)</h1>
@@ -94,6 +94,7 @@
                 <div class="grid grid-cols-2 gap-4 mb-4">
                     <div>
                         <label class="block text-sm font-bold mb-1">โรงพยาบาลปลายทาง</label>
+                        <!-- Dropdown นี้จะถูกเติมข้อมูลอัตโนมัติจาก Firebase -->
                         <select id="upload-receiver" required class="w-full p-2 border rounded">
                             <option value="">-- กำลังโหลดรายชื่อโรงพยาบาล... --</option>
                         </select>
@@ -130,29 +131,27 @@
     </div>
 
     <script>
-        // ข้อมูลการเชื่อมต่อ Firebase
+        // ข้อมูลการเชื่อมต่อ
         const firebaseConfig = {
-            apiKey: "AIzaSyDQSXj3-ojPsXbs2I7udVIVPL2E-bYCBQc",
-            authDomain: "dicom-referral.firebaseapp.com",
-            projectId: "dicom-referral",
-            storageBucket: "dicom-referral.firebasestorage.app",
-            messagingSenderId: "1013234791188",
-            appId: "1:1013234791188:web:f169e4602dbf4735e48801",
-            measurementId: "G-304XVHFNDS"
+              apiKey: "AIzaSyDQSXj3-ojPsXbs2i7udVIVPL2E-byCBQc",
+              authDomain: "dicom-referral.firebaseapp.com",
+              projectId: "dicom-referral",
+              storageBucket: "dicom-referral.firebasestorage.app",
+              messagingSenderId: "1013234791188",
+              appId: "1:1013234791188:web:f169e4602dbf4735e40801",
+              measurementId: "G-304XVHFND5"
         };
-        
-        // 🚨 อัปเดต URL ล่าสุดของ Google Apps Script ที่นี่ หากมีการ Deploy ใหม่
-        const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzb9CDH1obwUDmv_qU_zJay-T8LeYEVmDT916N4hAP7LBz2mEJapfFpaxAdBeqr9DyT8g/exec"; 
+        const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyVbrZpH2N8zZBVaAcqLJi4LCLHeQPa7t30Y1Cnq6Pl2dUD2lXw2syhRV7R7537PYjMmQ/exec"; 
 
         firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
         const db = firebase.firestore();
 
-        // โหลดรายชื่อโรงพยาบาลจาก Firestore
+        // 1. ระบบดึงรายชื่อโรงพยาบาลจากฐานข้อมูลมาแสดงอัตโนมัติ
         function loadHospitals() {
             db.collection("hospitals").get().then((querySnapshot) => {
                 const selectEl = document.getElementById('upload-receiver');
-                selectEl.innerHTML = '<option value="">-- เลือกโรงพยาบาล --</option>'; 
+                selectEl.innerHTML = '<option value="">-- เลือกโรงพยาบาล --</option>'; // ล้างค่าเดิม
                 
                 querySnapshot.forEach((doc) => {
                     const data = doc.data();
@@ -167,7 +166,7 @@
             });
         }
 
-        // จัดการ Login
+        // 2. จัดการ Login
         document.getElementById('login-form').addEventListener('submit', function(e) {
             e.preventDefault();
             const email = document.getElementById('email').value.trim();
@@ -185,7 +184,7 @@
                 });
         });
 
-        // จัดการปุ่ม
+        // 3. จัดการปุ่มต่างๆ บนหน้าจอ
         document.getElementById('btn-logout').addEventListener('click', () => auth.signOut());
         document.getElementById('btn-open-upload').addEventListener('click', () => {
             document.getElementById('upload-modal').classList.remove('hidden');
@@ -198,7 +197,7 @@
             document.getElementById('detail-modal').classList.add('hidden');
         });
 
-        // ตรวจสอบสถานะผู้ใช้
+        // 4. ตรวจสอบสถานะผู้ใช้
         auth.onAuthStateChanged(user => {
             const loginSection = document.getElementById('login-section');
             const dashboardSection = document.getElementById('dashboard-section');
@@ -209,6 +208,7 @@
                 dashboardSection.classList.remove('hidden');
                 document.getElementById('current-hospital').innerText = user.email;
                 
+                // เมื่อล็อกอินสำเร็จ ให้ดึงข้อมูลมาแสดง
                 loadReferrals(user.email);
                 loadHospitals(); 
             } else {
@@ -219,7 +219,7 @@
             }
         });
 
-        // โหลดรายการส่งต่อภาพผู้ป่วย
+        // 5. โหลดรายการส่งต่อภาพผู้ป่วย
         function loadReferrals(email) {
             db.collection("referrals").orderBy("createdAt", "desc").onSnapshot(snapshot => {
                 const listEl = document.getElementById('referral-list');
@@ -230,6 +230,7 @@
                     const data = doc.data();
                     const expireDate = data.expireAt ? new Date(data.expireAt.seconds * 1000) : new Date();
                     
+                    // ซ่อนรายการหมดอายุ
                     if (now > expireDate) return;
 
                     if (data.receiverHospital === email || data.senderHospital === email) {
@@ -255,6 +256,7 @@
             });
         }
 
+        // 6. เปิดหน้าจอรายละเอียด
         function openDetailModal(data) {
             document.getElementById('modal-hn').innerText = data.hn;
             document.getElementById('modal-name').innerText = data.patientName;
@@ -265,70 +267,36 @@
             document.getElementById('detail-modal').classList.remove('hidden');
         }
 
-        // ฟังก์ชันช่วยแปลงข้อมูลแต่ละก้อนเป็น Base64
-        function getBase64(fileBlob) {
-            return new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.readAsDataURL(fileBlob);
-                reader.onload = () => resolve(reader.result.split(',')[1]);
-                reader.onerror = error => reject(error);
-            });
-        }
-
-        // ฟังก์ชันหั่นไฟล์ส่งแบบ Chunked Upload ทะลุบล็อก CORS สำหรับไฟล์ขนาดใหญ่
+        // 7. ฟังก์ชันหลักในการยิงไฟล์ขนาดใหญ่ขึ้น Google Drive
         async function uploadLargeFileToDrive(file, expireDateStr, progressTextPrefix) {
-            const chunkSize = 2 * 1024 * 1024; // หั่นไฟล์ส่งทีละ 2MB
-            let start = 0;
+            const payload = { action: "getUploadUrl", fileName: file.name, mimeType: file.type || "application/octet-stream", expireDate: expireDateStr };
+            const res = await fetch(GAS_WEB_APP_URL, { method: 'POST', body: JSON.stringify(payload) });
+            const result = await res.json();
+            
+            if (!result.uploadUrl) throw new Error("ไม่สามารถสร้าง URL อัปโหลด");
 
-            document.getElementById('upload-progress-text').innerText = `${progressTextPrefix} กำลังเตรียมพื้นที่เชื่อมต่อ...`;
-
-            // 1. ขอ URL สำรองเพื่อเริ่มอัปโหลด
-            const initRes = await fetch(GAS_WEB_APP_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // ใช้ text/plain เลี่ยง CORS
-                body: JSON.stringify({ action: "initUpload", fileName: file.name, mimeType: file.type || "application/octet-stream", expireDate: expireDateStr })
+            return new Promise((resolve, reject) => {
+                const xhr = new XMLHttpRequest();
+                xhr.open('PUT', result.uploadUrl, true);
+                xhr.upload.onprogress = e => {
+                    if (e.lengthComputable) {
+                        const percent = Math.round((e.loaded / e.total) * 100);
+                        document.getElementById('upload-progress-bar').style.width = percent + '%';
+                        document.getElementById('upload-progress-text').innerText = `${progressTextPrefix} ${file.name} (${percent}%)`;
+                    }
+                };
+                xhr.onload = () => {
+                    if (xhr.status === 200 || xhr.status === 201) {
+                        const uploaded = JSON.parse(xhr.responseText);
+                        resolve({ fileId: uploaded.id, fileUrl: `https://drive.google.com/file/d/${uploaded.id}/view` });
+                    } else reject(new Error(`อัปโหลดล้มเหลว (Status: ${xhr.status})`));
+                };
+                xhr.onerror = () => reject(new Error("การเชื่อมต่อไปยังเซิร์ฟเวอร์ Drive ขัดข้อง"));
+                xhr.send(file);
             });
-            const initData = await initRes.json();
-            const uploadUrl = initData.uploadUrl;
-
-            // 2. ลูปหั่นไฟล์ส่งทีละก้อน
-            while (start < file.size) {
-                let end = start + chunkSize - 1;
-                if (end >= file.size) end = file.size - 1;
-                
-                const chunk = file.slice(start, end + 1);
-                const base64Chunk = await getBase64(chunk);
-
-                const chunkRes = await fetch(GAS_WEB_APP_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                    body: JSON.stringify({
-                        action: "uploadChunk",
-                        uploadUrl: uploadUrl,
-                        base64Data: base64Chunk,
-                        start: start,
-                        end: end,
-                        totalSize: file.size
-                    })
-                });
-                
-                const chunkData = await chunkRes.json();
-
-                const percent = Math.round(((end + 1) / file.size) * 100);
-                document.getElementById('upload-progress-bar').style.width = percent + '%';
-                document.getElementById('upload-progress-text').innerText = `${progressTextPrefix} ${file.name} (${percent}%)`;
-
-                if (chunkData.status === "success") {
-                    return { fileId: chunkData.fileId, fileUrl: `https://drive.google.com/file/d/${chunkData.fileId}/view` };
-                } else if (chunkData.status === "error") {
-                    throw new Error(chunkData.message);
-                }
-
-                start = end + 1;
-            }
         }
 
-        // กดปุ่มส่งข้อมูล
+        // 8. ทำงานเมื่อกดปุ่ม "ส่งข้อมูล"
         document.getElementById('upload-form').addEventListener('submit', async function(event) {
             event.preventDefault();
             const btnSubmit = document.getElementById('btn-submit');
