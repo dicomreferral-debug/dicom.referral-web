@@ -4,150 +4,204 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ระบบส่งต่อภาพ DICOM - โรงพยาบาลวิเชียรบุรี</title>
+    <!-- ใช้ Tailwind สำหรับโครงสร้าง UI -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+    <style>
+        /* แต่งสี Scrollbar ให้ดูเป็นแอปพลิเคชัน */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    </style>
 </head>
-<body class="bg-gray-100 font-sans">
+<body class="bg-gray-100 font-sans h-screen w-screen overflow-hidden flex flex-col">
 
-    <!-- Login -->
-    <div id="login-section" class="max-w-md mx-auto mt-20 bg-white p-8 rounded-lg shadow-md">
-        <h2 class="text-2xl font-bold mb-6 text-center text-blue-600">เข้าสู่ระบบส่งต่อข้อมูล</h2>
-        <form id="login-form">
-            <input type="email" id="email" placeholder="อีเมลโรงพยาบาล" required class="w-full mb-4 p-3 border rounded">
-            <input type="password" id="password" placeholder="รหัสผ่าน" required class="w-full mb-6 p-3 border rounded">
-            <button type="submit" id="btn-login" class="w-full bg-blue-600 text-white p-3 rounded font-bold hover:bg-blue-700">เข้าสู่ระบบ</button>
-        </form>
-    </div>
-
-    <!-- Dashboard -->
-    <div id="dashboard-section" class="hidden max-w-6xl mx-auto mt-10 bg-white p-6 rounded-lg shadow-md">
-        <div class="flex justify-between items-center mb-6 border-b pb-4">
-            <h1 class="text-xl font-bold text-gray-800">ระบบส่งต่อภาพ DICOM (บัญชี: <span id="current-hospital" class="text-blue-600"></span>)</h1>
-            <button id="btn-logout" class="bg-red-500 text-white px-4 py-2 rounded text-sm hover:bg-red-600">ออกจากระบบ</button>
-        </div>
-
-        <button id="btn-open-upload" class="bg-blue-600 text-white px-4 py-2 rounded font-bold mb-4 hover:bg-blue-700">
-            + สร้างรายการส่งต่อใหม่
-        </button>
-
-        <div class="overflow-x-auto">
-            <table class="w-full text-left border-collapse bg-white">
-                <thead class="bg-gray-200">
-                    <tr>
-                        <th class="p-3 border">สถานะ</th>
-                        <th class="p-3 border">วันที่/เวลา</th>
-                        <th class="p-3 border">HN</th>
-                        <th class="p-3 border">ชื่อ-นามสกุล</th>
-                        <th class="p-3 border">ต้นทาง / ปลายทาง</th>
-                        <th class="p-3 border">จัดการ</th>
-                    </tr>
-                </thead>
-                <tbody id="referral-list"></tbody>
-            </table>
+    <!-- Login Section -->
+    <div id="login-section" class="flex-1 flex items-center justify-center bg-gray-200 absolute inset-0 z-50">
+        <div class="max-w-md w-full bg-white p-8 rounded-lg shadow-lg border-t-4 border-cyan-600">
+            <h2 class="text-2xl font-bold mb-6 text-center text-cyan-700">เข้าสู่ระบบ DICOM Network</h2>
+            <form id="login-form">
+                <input type="email" id="email" placeholder="อีเมลโรงพยาบาล" required class="w-full mb-4 p-3 border rounded focus:outline-none focus:border-cyan-500">
+                <input type="password" id="password" placeholder="รหัสผ่าน" required class="w-full mb-6 p-3 border rounded focus:outline-none focus:border-cyan-500">
+                <button type="submit" id="btn-login" class="w-full bg-cyan-600 text-white p-3 rounded font-bold hover:bg-cyan-700 transition">เข้าสู่ระบบ</button>
+            </form>
         </div>
     </div>
 
-    <!-- Modal ดูผลอ่าน -->
+    <!-- Main App (ซ่อนจนกว่าจะล็อกอิน) -->
+    <div id="dashboard-section" class="hidden flex-1 flex h-full">
+        
+        <!-- แถบเครื่องมือซ้ายสุด (Sidebar) -->
+        <div class="w-16 bg-cyan-800 flex flex-col items-center py-4 space-y-6 text-white shrink-0 shadow-lg z-10">
+            <div class="p-2 bg-cyan-600 rounded-lg cursor-pointer" title="หน้าหลัก">🏠</div>
+            <div class="p-2 hover:bg-cyan-700 rounded-lg cursor-pointer" title="อัปโหลด" onclick="document.getElementById('upload-modal').classList.remove('hidden')">➕</div>
+        </div>
+
+        <!-- แถบค้นหาและกรองข้อมูล (Filter Panel) -->
+        <div class="w-64 bg-cyan-50 border-r border-cyan-200 flex flex-col shrink-0">
+            <div class="bg-cyan-100 p-4 border-b border-cyan-200 font-bold text-cyan-800 flex items-center gap-2">
+                🔍 Patient Search
+            </div>
+            <div class="p-4 space-y-4 flex-1 overflow-y-auto text-sm">
+                <div>
+                    <label class="block text-cyan-800 font-semibold mb-1">คำค้นหา (Keyword)</label>
+                    <input type="text" id="filter-keyword" placeholder="ชื่อ หรือ HN" class="w-full p-2 border border-cyan-300 rounded focus:outline-none focus:border-cyan-500">
+                </div>
+                <div>
+                    <label class="block text-cyan-800 font-semibold mb-1">ตั้งแต่วันที่ (From Date)</label>
+                    <input type="date" id="filter-start" class="w-full p-2 border border-cyan-300 rounded">
+                </div>
+                <div>
+                    <label class="block text-cyan-800 font-semibold mb-1">ถึงวันที่ (To Date)</label>
+                    <input type="date" id="filter-end" class="w-full p-2 border border-cyan-300 rounded">
+                </div>
+                <div class="pt-4 flex gap-2">
+                    <button onclick="clearFilters()" class="flex-1 bg-gray-300 text-gray-700 p-2 rounded hover:bg-gray-400 font-semibold">Clear</button>
+                    <button onclick="renderTable()" class="flex-1 bg-cyan-600 text-white p-2 rounded hover:bg-cyan-700 font-semibold">Search</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- พื้นที่แสดงข้อมูลตาราง (Main Content) -->
+        <div class="flex-1 flex flex-col bg-white overflow-hidden">
+            <!-- Topbar -->
+            <div class="h-12 bg-cyan-600 flex justify-between items-center px-4 text-white shadow">
+                <span class="font-bold tracking-wide">DICOM Web Portal</span>
+                <div class="flex items-center gap-4 text-sm">
+                    <span>บัญชี: <strong id="current-hospital"></strong></span>
+                    <button id="btn-logout" class="bg-cyan-800 px-3 py-1 rounded hover:bg-cyan-900">ออกจากระบบ</button>
+                </div>
+            </div>
+
+            <!-- Tabs ผู้ป่วยเข้า / ผู้ป่วยออก -->
+            <div class="flex border-b bg-gray-50">
+                <button id="tab-inbox" onclick="switchTab('inbox')" class="flex-1 py-3 font-bold text-cyan-700 border-b-4 border-cyan-600 bg-white">📥 ผู้ป่วยเข้า (รับจากเครือข่าย)</button>
+                <button id="tab-outbox" onclick="switchTab('outbox')" class="flex-1 py-3 font-bold text-gray-500 hover:bg-gray-100 border-b-4 border-transparent">📤 ผู้ป่วยออก (ส่งต่อ)</button>
+            </div>
+
+            <!-- ตารางข้อมูล -->
+            <div class="flex-1 overflow-auto">
+                <table class="w-full text-left border-collapse whitespace-nowrap text-sm">
+                    <thead class="bg-cyan-50 sticky top-0 border-b border-cyan-200 text-cyan-800">
+                        <tr>
+                            <th class="p-3 font-semibold">วันที่/เวลา (Study Date)</th>
+                            <th class="p-3 font-semibold">HN (Patient ID)</th>
+                            <th class="p-3 font-semibold">ชื่อ-นามสกุล (Patient Name)</th>
+                            <th class="p-3 font-semibold" id="col-hospital-type">รพ.ต้นทาง (Location)</th>
+                            <th class="p-3 font-semibold text-center">จัดการ (Action)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="referral-list" class="divide-y divide-gray-200">
+                        <!-- แถวข้อมูลจะถูกสร้างด้วย JS -->
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- แถบแสดงจำนวนรายการ -->
+            <div class="h-10 bg-gray-100 border-t flex items-center px-4 text-xs font-semibold text-gray-600">
+                แสดงผล: <span id="record-count" class="ml-1 text-cyan-700">0</span> รายการ
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal ดูผลอ่าน (PDF แบบแยกพิมพ์) -->
     <div id="detail-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-40">
         <div class="bg-white rounded-lg max-w-5xl w-full p-6 relative flex flex-col" style="height: 92vh;">
-            <div id="printable-area" class="flex-grow flex flex-col overflow-y-auto pr-2">
-                <h2 class="text-2xl font-bold mb-3 text-blue-600">รายละเอียดข้อมูลผู้ป่วย</h2>
+            <div id="printable-area" class="flex-grow flex flex-col overflow-hidden">
+                <h2 class="text-xl font-bold mb-3 text-cyan-700">รายละเอียดข้อมูลผู้ป่วย</h2>
                 
-                <div class="grid grid-cols-2 gap-3 mb-4 bg-gray-50 p-4 rounded border text-sm">
+                <div class="grid grid-cols-2 gap-3 mb-4 bg-gray-50 p-3 rounded border text-sm">
                     <p><strong>HN:</strong> <span id="modal-hn" class="font-semibold text-gray-800"></span></p>
                     <p><strong>ชื่อ-นามสกุล:</strong> <span id="modal-name" class="font-semibold text-gray-800"></span></p>
                     <p><strong>รพ.ต้นทาง:</strong> <span id="modal-sender" class="text-blue-700 font-semibold"></span></p>
                     <p><strong>รพ.ปลายทาง:</strong> <span id="modal-receiver" class="text-green-700 font-semibold"></span></p>
-                    <p class="col-span-2"><strong>ซ่อนข้อมูลอัตโนมัติเมื่อเลยวันที่:</strong> <span id="modal-expire" class="text-red-500"></span></p>
                 </div>
 
-                <!-- แถบดาวน์โหลดไฟล์ภาพ DICOM -->
-                <div class="mb-3 p-3 bg-blue-50 rounded flex justify-between items-center border border-blue-200">
-                    <span class="text-blue-900 font-medium">📦 ไฟล์ภาพ DICOM (ZIP/RAR)</span>
-                    <a id="modal-zip-link" href="#" target="_blank" class="bg-blue-600 text-white px-4 py-1.5 rounded text-sm font-bold hover:bg-blue-700 shadow">
-                        ⬇️ ดาวน์โหลดภาพ DICOM
+                <div class="mb-3 p-3 bg-cyan-50 rounded flex justify-between items-center border border-cyan-200">
+                    <span class="text-cyan-900 font-medium">📦 ไฟล์ภาพ DICOM (ZIP/RAR)</span>
+                    <a id="modal-zip-link" href="#" target="_blank" class="bg-cyan-600 text-white px-4 py-1.5 rounded text-sm font-bold hover:bg-cyan-700 shadow">
+                        ⬇️ ดาวน์โหลดภาพ
                     </a>
                 </div>
 
-                <!-- ส่วนแสดงผล PDF และปุ่มจัดการ -->
-                <div class="flex-grow flex flex-col mt-2">
+                <div class="flex-grow flex flex-col overflow-hidden">
                     <div class="flex justify-between items-center mb-2">
                         <span class="font-bold text-gray-700">📄 ผลอ่านเอกซเรย์ (PDF)</span>
                         <div class="space-x-2">
-                            <a id="modal-pdf-download" href="#" target="_blank" class="bg-gray-700 text-white px-3 py-1 rounded text-sm hover:bg-gray-800">
-                                ⬇️ ดาวน์โหลด PDF
-                            </a>
-                            <button onclick="printPdfDocument()" class="bg-green-600 text-white px-3 py-1 rounded text-sm font-bold hover:bg-green-700">
-                                🖨️ พิมพ์เอกสาร PDF
-                            </button>
+                            <a id="modal-pdf-download" href="#" target="_blank" class="bg-gray-700 text-white px-3 py-1 rounded text-sm hover:bg-gray-800">⬇️ ดาวน์โหลด PDF</a>
+                            <button onclick="printPdfDocument()" class="bg-green-600 text-white px-3 py-1 rounded text-sm font-bold hover:bg-green-700">🖨️ พิมพ์เอกสาร PDF</button>
                         </div>
                     </div>
-                    <iframe id="modal-pdf-viewer" src="" class="w-full border rounded flex-grow" style="min-height: 420px;"></iframe>
+                    <!-- iframe สำหรับแสดง PDF -->
+                    <iframe id="modal-pdf-viewer" src="" class="w-full border rounded flex-grow bg-gray-200"></iframe>
                 </div>
             </div>
 
             <div class="flex justify-end border-t pt-3 mt-3">
-                <button id="btn-close-detail" class="bg-gray-500 text-white px-6 py-2 rounded font-bold hover:bg-gray-600">ปิดหน้าต่าง</button>
+                <button onclick="document.getElementById('detail-modal').classList.add('hidden')" class="bg-gray-500 text-white px-6 py-2 rounded font-bold hover:bg-gray-600">ปิดหน้าต่าง</button>
             </div>
         </div>
     </div>
 
-    <!-- Modal ส่งข้อมูล -->
-    <div id="upload-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-        <div class="bg-white rounded-lg max-w-2xl w-full p-6">
-            <h2 class="text-2xl font-bold mb-6 text-blue-600">ฟอร์มส่งต่อข้อมูล</h2>
+    <!-- Modal ส่งข้อมูล (Upload) -->
+    <div id="upload-modal" class="hidden fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-lg max-w-2xl w-full p-6 shadow-2xl">
+            <h2 class="text-2xl font-bold mb-6 text-cyan-700">ฟอร์มส่งต่อข้อมูล</h2>
             <form id="upload-form">
                 <div class="grid grid-cols-2 gap-4 mb-4">
                     <div>
                         <label class="block text-sm font-bold mb-1">HN</label>
-                        <input type="text" id="upload-hn" required class="w-full p-2 border rounded">
+                        <input type="text" id="upload-hn" required class="w-full p-2 border rounded focus:border-cyan-500 focus:outline-none">
                     </div>
                     <div>
                         <label class="block text-sm font-bold mb-1">ชื่อ-นามสกุล</label>
-                        <input type="text" id="upload-name" required class="w-full p-2 border rounded">
+                        <input type="text" id="upload-name" required class="w-full p-2 border rounded focus:border-cyan-500 focus:outline-none">
                     </div>
                 </div>
                 <div class="grid grid-cols-2 gap-4 mb-4">
                     <div>
                         <label class="block text-sm font-bold mb-1">โรงพยาบาลปลายทาง</label>
-                        <select id="upload-receiver" required class="w-full p-2 border rounded">
-                            <option value="">-- กำลังโหลดรายชื่อโรงพยาบาล... --</option>
+                        <select id="upload-receiver" required class="w-full p-2 border rounded focus:border-cyan-500 focus:outline-none">
+                            <option value="">-- กำลังโหลดรายชื่อ... --</option>
                         </select>
                     </div>
                     <div>
                         <label class="block text-sm font-bold mb-1">ระยะเวลาแสดงข้อมูล</label>
-                        <select id="upload-expire" class="w-full p-2 border rounded">
+                        <select id="upload-expire" class="w-full p-2 border rounded focus:border-cyan-500 focus:outline-none">
                             <option value="7">7 วัน</option>
                             <option value="14">14 วัน</option>
                             <option value="30">1 เดือน</option>
                         </select>
                     </div>
                 </div>
-                <div class="mb-4 p-4 bg-gray-50 border rounded">
+                <div class="mb-4 p-4 bg-gray-50 border rounded-lg">
                     <label class="block text-sm font-bold mb-1 text-red-600">1. แนบไฟล์ผลอ่าน (PDF)</label>
                     <input type="file" id="upload-pdf" accept=".pdf" required class="w-full mb-4">
-                    <label class="block text-sm font-bold mb-1 text-blue-600">2. แนบไฟล์ภาพ DICOM (ZIP/RAR)</label>
+                    <label class="block text-sm font-bold mb-1 text-cyan-600">2. แนบไฟล์ภาพ DICOM (ZIP/RAR)</label>
                     <input type="file" id="upload-zip" accept=".zip,.rar" required class="w-full">
                 </div>
 
                 <div id="upload-progress-container" class="hidden mb-4">
-                    <div class="text-sm font-bold text-blue-600" id="upload-progress-text">กำลังอัปโหลด...</div>
-                    <div class="w-full bg-gray-200 rounded-full h-4 mt-1">
-                        <div id="upload-progress-bar" class="bg-blue-600 h-4 rounded-full transition-all duration-300" style="width: 0%"></div>
+                    <div class="text-sm font-bold text-cyan-600" id="upload-progress-text">กำลังอัปโหลด...</div>
+                    <div class="w-full bg-gray-200 rounded-full h-4 mt-1 overflow-hidden">
+                        <div id="upload-progress-bar" class="bg-cyan-500 h-4 rounded-full transition-all duration-300" style="width: 0%"></div>
                     </div>
                 </div>
 
                 <div class="flex justify-end space-x-3 border-t pt-4">
-                    <button type="submit" id="btn-submit" class="bg-blue-600 text-white px-6 py-2 rounded font-bold hover:bg-blue-700">ส่งข้อมูล</button>
-                    <button type="button" id="btn-cancel-upload" class="bg-gray-400 text-white px-6 py-2 rounded font-bold hover:bg-gray-500">ยกเลิก</button>
+                    <button type="button" onclick="document.getElementById('upload-modal').classList.add('hidden')" class="bg-gray-400 text-white px-6 py-2 rounded font-bold hover:bg-gray-500">ยกเลิก</button>
+                    <button type="submit" id="btn-submit" class="bg-cyan-600 text-white px-6 py-2 rounded font-bold hover:bg-cyan-700 shadow-md">ส่งข้อมูล</button>
                 </div>
             </form>
         </div>
     </div>
 
+    <!-- โค้ด JavaScript -->
     <script>
+        // ข้อมูลการเชื่อมต่อ Firebase และ GAS (ตัวเดิม)
         const firebaseConfig = {
               apiKey: "AIzaSyDQSXj3-ojPsXbs2i7udVIVPL2E-byCBQc",
               authDomain: "dicom-referral.firebaseapp.com",
@@ -163,179 +217,205 @@
         const auth = firebase.auth();
         const db = firebase.firestore();
 
-        // ตัวแปรเก็บพจนานุกรมรายชื่อโรงพยาบาล (email -> name)
         let hospitalMap = {};
+        let allReferrals = []; // เก็บข้อมูลที่ดึงมาทั้งหมดเพื่อใช้ Filter
+        let currentTab = 'inbox'; // สถานะ Tab เริ่มต้น
 
-        // ฟังก์ชันช่วยแปลง email เป็นชื่อโรงพยาบาล
-        function getHospitalDisplayName(email) {
-            return hospitalMap[email] || email;
-        }
+        function getHospitalDisplayName(email) { return hospitalMap[email] || email; }
 
-        // 1. ระบบดึงรายชื่อโรงพยาบาลจากฐานข้อมูล และสร้าง Map สำหรับแปลงชื่อ
         async function loadHospitals() {
             try {
-                const querySnapshot = await db.collection("hospitals").get();
+                const snapshot = await db.collection("hospitals").get();
                 const selectEl = document.getElementById('upload-receiver');
                 selectEl.innerHTML = '<option value="">-- เลือกโรงพยาบาล --</option>';
-                
                 hospitalMap = {};
-                querySnapshot.forEach((doc) => {
+                snapshot.forEach((doc) => {
                     const data = doc.data();
                     hospitalMap[data.email] = data.name;
-                    
                     const option = document.createElement('option');
-                    option.value = data.email;
-                    option.textContent = data.name;
+                    option.value = data.email; option.textContent = data.name;
                     selectEl.appendChild(option);
                 });
-
-                // อัปเดตชื่อบัญชีปัจจุบันที่หัวแดชบอร์ดให้เป็นชื่อโรงพยาบาล
-                if (auth.currentUser) {
-                    document.getElementById('current-hospital').innerText = getHospitalDisplayName(auth.currentUser.email);
-                }
-            } catch (error) {
-                console.error("โหลดรายชื่อโรงพยาบาลไม่สำเร็จ:", error);
-                document.getElementById('upload-receiver').innerHTML = '<option value="">-- โหลดข้อมูลล้มเหลว --</option>';
-            }
+                if (auth.currentUser) document.getElementById('current-hospital').innerText = getHospitalDisplayName(auth.currentUser.email);
+            } catch (error) { console.error(error); }
         }
 
-        // 2. จัดการ Login
+        // จัดการ Login / Logout
         document.getElementById('login-form').addEventListener('submit', function(e) {
             e.preventDefault();
-            const email = document.getElementById('email').value.trim();
-            const password = document.getElementById('password').value;
             const btn = document.getElementById('btn-login');
-
-            btn.disabled = true;
-            btn.innerText = "กำลังเข้าสู่ระบบ...";
-
-            auth.signInWithEmailAndPassword(email, password)
-                .catch(err => {
-                    alert("เข้าสู่ระบบไม่สำเร็จ: กรุณาตรวจสอบอีเมลและรหัสผ่าน");
-                    btn.disabled = false;
-                    btn.innerText = "เข้าสู่ระบบ";
-                });
+            btn.disabled = true; btn.innerText = "กำลังเข้าสู่ระบบ...";
+            auth.signInWithEmailAndPassword(document.getElementById('email').value.trim(), document.getElementById('password').value)
+                .catch(err => { alert("เข้าสู่ระบบไม่สำเร็จ"); btn.disabled = false; btn.innerText = "เข้าสู่ระบบ"; });
         });
-
-        // 3. จัดการปุ่มต่างๆ
         document.getElementById('btn-logout').addEventListener('click', () => auth.signOut());
-        document.getElementById('btn-open-upload').addEventListener('click', () => {
-            document.getElementById('upload-modal').classList.remove('hidden');
-        });
-        document.getElementById('btn-cancel-upload').addEventListener('click', () => {
-            document.getElementById('upload-modal').classList.add('hidden');
-            document.getElementById('upload-form').reset();
-        });
-        document.getElementById('btn-close-detail').addEventListener('click', () => {
-            document.getElementById('detail-modal').classList.add('hidden');
-            document.getElementById('modal-pdf-viewer').src = "";
-        });
 
-        // 4. ตรวจสอบสถานะผู้ใช้
+        // ตรวจสอบสถานะ
         auth.onAuthStateChanged(async user => {
-            const loginSection = document.getElementById('login-section');
-            const dashboardSection = document.getElementById('dashboard-section');
-            const btnLogin = document.getElementById('btn-login');
-
             if (user) {
-                loginSection.classList.add('hidden');
-                dashboardSection.classList.remove('hidden');
-                
-                await loadHospitals(); // โหลดรายชื่อโรงพยาบาลให้เสร็จก่อนดึงตาราง
+                document.getElementById('login-section').classList.add('hidden');
+                document.getElementById('dashboard-section').classList.remove('hidden');
+                await loadHospitals();
                 document.getElementById('current-hospital').innerText = getHospitalDisplayName(user.email);
-                loadReferrals(user.email);
+                fetchReferralsData(user.email); // ดึงข้อมูล
             } else {
-                loginSection.classList.remove('hidden');
-                dashboardSection.classList.add('hidden');
-                btnLogin.disabled = false;
-                btnLogin.innerText = "เข้าสู่ระบบ";
+                document.getElementById('login-section').classList.remove('hidden');
+                document.getElementById('dashboard-section').classList.add('hidden');
+                document.getElementById('btn-login').disabled = false;
+                document.getElementById('btn-login').innerText = "เข้าสู่ระบบ";
             }
         });
 
-        // 5. โหลดรายการส่งต่อภาพผู้ป่วย (แปลงอีเมลเป็นชื่อ รพ. ทั้งหมด)
-        function loadReferrals(email) {
+        // ดึงข้อมูลแบบ Realtime เก็บลง Array
+        function fetchReferralsData(email) {
             db.collection("referrals").orderBy("createdAt", "desc").onSnapshot(snapshot => {
-                const listEl = document.getElementById('referral-list');
-                listEl.innerHTML = "";
+                allReferrals = [];
                 const now = new Date();
-
                 snapshot.forEach(doc => {
                     const data = doc.data();
+                    data.id = doc.id; // เก็บ ID สำหรับลบ
                     const expireDate = data.expireAt ? new Date(data.expireAt.seconds * 1000) : new Date();
-                    
-                    if (now > expireDate) return;
-
-                    if (data.receiverHospital === email || data.senderHospital === email) {
-                        const isInbox = data.receiverHospital === email;
-                        const status = isInbox ? '<span class="bg-green-100 text-green-800 px-2 py-1 rounded text-xs font-bold">รับเข้า</span>' : '<span class="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs font-bold">ส่งออก</span>';
-                        const dateStr = data.createdAt ? new Date(data.createdAt.seconds * 1000).toLocaleString('th-TH') : '';
-                        
-                        const senderName = getHospitalDisplayName(data.senderHospital);
-                        const receiverName = getHospitalDisplayName(data.receiverHospital);
-
-                        const row = document.createElement('tr');
-                        row.className = "border-b hover:bg-gray-50";
-                        row.innerHTML = `
-                            <td class="p-3 border">${status}</td>
-                            <td class="p-3 border">${dateStr}</td>
-                            <td class="p-3 border font-semibold">${data.hn}</td>
-                            <td class="p-3 border">${data.patientName}</td>
-                            <td class="p-3 border text-sm">
-                                <span class="text-blue-700">จาก:</span> <strong>${senderName}</strong><br>
-                                <span class="text-green-700">ถึง:</span> <strong>${receiverName}</strong>
-                            </td>
-                            <td class="p-3 border">
-                                <button class="btn-view bg-blue-500 text-white px-3 py-1 rounded text-sm hover:bg-blue-600 font-bold">เปิดดู</button>
-                            </td>`;
-                        row.querySelector('.btn-view').addEventListener('click', () => openDetailModal(data));
-                        listEl.appendChild(row);
+                    if (now <= expireDate && (data.receiverHospital === email || data.senderHospital === email)) {
+                        allReferrals.push(data);
                     }
                 });
+                renderTable(); // สั่งสร้างตาราง
             });
         }
 
-        // 6. เปิดหน้าจอรายละเอียด (แสดงชื่อ รพ. + ลิงก์ดาวน์โหลด PDF)
+        // สลับ Tabs
+        function switchTab(tabName) {
+            currentTab = tabName;
+            const tabIn = document.getElementById('tab-inbox');
+            const tabOut = document.getElementById('tab-outbox');
+            document.getElementById('col-hospital-type').innerText = tabName === 'inbox' ? 'รพ.ต้นทาง (จาก)' : 'รพ.ปลายทาง (ส่งไป)';
+
+            if (tabName === 'inbox') {
+                tabIn.className = "flex-1 py-3 font-bold text-cyan-700 border-b-4 border-cyan-600 bg-white";
+                tabOut.className = "flex-1 py-3 font-bold text-gray-500 hover:bg-gray-100 border-b-4 border-transparent";
+            } else {
+                tabOut.className = "flex-1 py-3 font-bold text-cyan-700 border-b-4 border-cyan-600 bg-white";
+                tabIn.className = "flex-1 py-3 font-bold text-gray-500 hover:bg-gray-100 border-b-4 border-transparent";
+            }
+            renderTable();
+        }
+
+        // ล้างช่องค้นหา
+        function clearFilters() {
+            document.getElementById('filter-keyword').value = "";
+            document.getElementById('filter-start').value = "";
+            document.getElementById('filter-end').value = "";
+            renderTable();
+        }
+
+        // ฟังก์ชันสร้างตาราง + กรองข้อมูล (Search/Filter)
+        function renderTable() {
+            const listEl = document.getElementById('referral-list');
+            listEl.innerHTML = "";
+            
+            const keyword = document.getElementById('filter-keyword').value.toLowerCase();
+            const startStr = document.getElementById('filter-start').value;
+            const endStr = document.getElementById('filter-end').value;
+            
+            const startDate = startStr ? new Date(startStr + "T00:00:00") : null;
+            const endDate = endStr ? new Date(endStr + "T23:59:59") : null;
+            const myEmail = auth.currentUser.email;
+
+            let count = 0;
+
+            allReferrals.forEach(data => {
+                // 1. กรองตาม Tab (Inbox = เราเป็นผู้รับ, Outbox = เราเป็นผู้ส่ง)
+                if (currentTab === 'inbox' && data.receiverHospital !== myEmail) return;
+                if (currentTab === 'outbox' && data.senderHospital !== myEmail) return;
+
+                // 2. กรอง Keyword (HN หรือ ชื่อ)
+                const searchStr = (data.hn + " " + data.patientName).toLowerCase();
+                if (keyword && !searchStr.includes(keyword)) return;
+
+                // 3. กรองวันที่
+                const docDate = data.createdAt ? new Date(data.createdAt.seconds * 1000) : new Date();
+                if (startDate && docDate < startDate) return;
+                if (endDate && docDate > endDate) return;
+
+                count++;
+                const dateStr = docDate.toLocaleString('th-TH');
+                const hospitalCol = currentTab === 'inbox' ? getHospitalDisplayName(data.senderHospital) : getHospitalDisplayName(data.receiverHospital);
+
+                const row = document.createElement('tr');
+                row.className = "border-b hover:bg-cyan-50 cursor-pointer";
+                row.innerHTML = `
+                    <td class="p-3">${dateStr}</td>
+                    <td class="p-3 font-semibold text-cyan-800">${data.hn}</td>
+                    <td class="p-3">${data.patientName}</td>
+                    <td class="p-3 text-gray-700">${hospitalCol}</td>
+                    <td class="p-3 text-center space-x-2">
+                        <button class="btn-view bg-blue-500 text-white px-3 py-1 rounded text-xs hover:bg-blue-600 font-bold">เปิดดู</button>
+                        <button class="btn-del bg-red-500 text-white px-3 py-1 rounded text-xs hover:bg-red-600 font-bold" title="ลบข้อมูล">ลบ</button>
+                    </td>`;
+                
+                row.querySelector('.btn-view').addEventListener('click', () => openDetailModal(data));
+                row.querySelector('.btn-del').addEventListener('click', () => deleteReferral(data));
+                listEl.appendChild(row);
+            });
+            document.getElementById('record-count').innerText = count;
+        }
+
+        // เปิด Modal
         function openDetailModal(data) {
             document.getElementById('modal-hn').innerText = data.hn;
             document.getElementById('modal-name').innerText = data.patientName;
             document.getElementById('modal-sender').innerText = getHospitalDisplayName(data.senderHospital);
             document.getElementById('modal-receiver').innerText = getHospitalDisplayName(data.receiverHospital);
-            document.getElementById('modal-expire').innerText = new Date(data.expireAt.seconds * 1000).toLocaleDateString('th-TH');
             
-            // ลิงก์ดาวน์โหลด ZIP
             document.getElementById('modal-zip-link').href = data.zipFileUrl;
+            document.getElementById('modal-pdf-viewer').src = `https://drive.google.com/file/d/${data.pdfFileId}/preview`;
+            document.getElementById('modal-pdf-download').href = `https://drive.google.com/uc?export=download&id=${data.pdfFileId}`;
             
-            // ลิงก์ดู PDF และลิงก์ดาวน์โหลด PDF ตรงจาก Drive
-            const pdfPreviewUrl = `https://drive.google.com/file/d/${data.pdfFileId}/preview`;
-            const pdfDownloadUrl = `https://drive.google.com/uc?export=download&id=${data.pdfFileId}`;
-            
-            document.getElementById('modal-pdf-viewer').src = pdfPreviewUrl;
-            document.getElementById('modal-pdf-download').href = pdfDownloadUrl;
-
             document.getElementById('detail-modal').classList.remove('hidden');
         }
 
-        // ฟังก์ชันสั่งพิมพ์เฉพาะตัวเอกสาร PDF
         function printPdfDocument() {
             const iframe = document.getElementById('modal-pdf-viewer');
             if (iframe) {
-                try {
-                    iframe.contentWindow.focus();
-                    iframe.contentWindow.print();
-                } catch (e) {
-                    // หากเบราว์เซอร์ติดความปลอดภัย iframe ให้เปิดแท็บ PDF ออกมาแล้วสั่งพิมพ์
+                try { iframe.contentWindow.focus(); iframe.contentWindow.print(); } 
+                catch (e) {
                     const printWin = window.open(iframe.src, '_blank');
-                    if (printWin) {
-                        printWin.onload = function() {
-                            printWin.focus();
-                            printWin.print();
-                        };
-                    }
+                    if (printWin) { printWin.onload = function() { printWin.focus(); printWin.print(); }; }
                 }
             }
         }
 
-        // 7. ส่วนฟังก์ชันหั่นไฟล์ (Chunked Upload)
+        // ==========================================
+        // ฟังก์ชันลบข้อมูล Manual (ลบฐานข้อมูล + ลบไฟล์ใน Drive)
+        // ==========================================
+        async function deleteReferral(data) {
+            if(!confirm(`ยืนยันการลบข้อมูลผู้ป่วย HN: ${data.hn} ใช่หรือไม่?\n(ไฟล์ PDF และ ZIP ใน Drive จะถูกลบทิ้งด้วย)`)) return;
+            
+            try {
+                // 1. ลบจาก Firestore
+                await db.collection("referrals").doc(data.id).delete();
+
+                // 2. สกัด ID ของไฟล์ ZIP จาก URL
+                let zipId = null;
+                const match = data.zipFileUrl.match(/\/d\/(.+?)\//);
+                if (match) zipId = match[1];
+
+                // 3. สั่ง GAS ให้ลบไฟล์ออกจาก Drive (ต้องอัปเดต GAS ด้วย)
+                fetch(GAS_WEB_APP_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify({ action: "deleteFiles", pdfId: data.pdfFileId, zipId: zipId })
+                });
+
+                alert("ลบข้อมูลสำเร็จเรียบร้อย");
+            } catch (error) {
+                alert("เกิดข้อผิดพลาดในการลบ: " + error.message);
+            }
+        }
+
+        // ==========================================
+        // ระบบหั่นไฟล์ (Chunked Upload) ของเดิม
+        // ==========================================
         function getBase64(fileBlob) {
             return new Promise((resolve, reject) => {
                 const reader = new FileReader();
@@ -346,58 +426,39 @@
         }
 
         async function uploadLargeFileToDrive(file, expireDateStr, progressTextPrefix) {
-            const chunkSize = 2 * 1024 * 1024; // ทีละ 2MB
+            const chunkSize = 2 * 1024 * 1024; 
             let start = 0;
-
             document.getElementById('upload-progress-text').innerText = `${progressTextPrefix} กำลังเตรียมพื้นที่เชื่อมต่อ...`;
 
             const initRes = await fetch(GAS_WEB_APP_URL, {
                 method: 'POST',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' }, 
                 body: JSON.stringify({ action: "initUpload", fileName: file.name, mimeType: file.type || "application/octet-stream", expireDate: expireDateStr })
             });
             const initData = await initRes.json();
-            
-            if (initData.status !== "success") {
-                throw new Error("สร้างลิงก์อัปโหลดไม่สำเร็จ: " + (initData.message || ""));
-            }
+            if (initData.status !== "success") throw new Error("สร้างลิงก์ไม่สำเร็จ");
             const uploadUrl = initData.uploadUrl;
 
             while (start < file.size) {
                 let end = start + chunkSize - 1;
                 if (end >= file.size) end = file.size - 1;
-                
                 const chunk = file.slice(start, end + 1);
                 const base64Chunk = await getBase64(chunk);
-
                 const chunkRes = await fetch(GAS_WEB_APP_URL, {
                     method: 'POST',
-                    body: JSON.stringify({
-                        action: "uploadChunk",
-                        uploadUrl: uploadUrl,
-                        base64Data: base64Chunk,
-                        start: start,
-                        end: end,
-                        totalSize: file.size
-                    })
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify({ action: "uploadChunk", uploadUrl: uploadUrl, base64Data: base64Chunk, start: start, end: end, totalSize: file.size })
                 });
-                
                 const chunkData = await chunkRes.json();
-
                 const percent = Math.round(((end + 1) / file.size) * 100);
                 document.getElementById('upload-progress-bar').style.width = percent + '%';
                 document.getElementById('upload-progress-text').innerText = `${progressTextPrefix} ${file.name} (${percent}%)`;
-
-                if (chunkData.status === "success") {
-                    return { fileId: chunkData.fileId, fileUrl: `https://drive.google.com/file/d/${chunkData.fileId}/view` };
-                } else if (chunkData.status === "error") {
-                    throw new Error(chunkData.message);
-                }
-
+                if (chunkData.status === "success") return { fileId: chunkData.fileId, fileUrl: `https://drive.google.com/file/d/${chunkData.fileId}/view` };
+                else if (chunkData.status === "error") throw new Error(chunkData.message);
                 start = end + 1;
             }
         }
 
-        // 8. ส่งข้อมูลเมื่อกดยืนยัน
         document.getElementById('upload-form').addEventListener('submit', async function(event) {
             event.preventDefault();
             const btnSubmit = document.getElementById('btn-submit');
@@ -406,18 +467,16 @@
 
             try {
                 const expireDays = parseInt(document.getElementById('upload-expire').value);
-                const expireDate = new Date();
-                expireDate.setDate(expireDate.getDate() + expireDays);
-                const expireDateStr = expireDate.toISOString(); 
-
+                const expireDate = new Date(); expireDate.setDate(expireDate.getDate() + expireDays);
+                
                 const pdfFile = document.getElementById('upload-pdf').files[0];
                 const zipFile = document.getElementById('upload-zip').files[0];
 
                 document.getElementById('upload-progress-bar').style.width = '0%';
-                const pdfResult = await uploadLargeFileToDrive(pdfFile, expireDateStr, "1/2 กำลังอัปโหลดผลอ่าน:");
+                const pdfResult = await uploadLargeFileToDrive(pdfFile, expireDate.toISOString(), "1/2 กำลังอัปโหลดผลอ่าน:");
                 
                 document.getElementById('upload-progress-bar').style.width = '0%';
-                const zipResult = await uploadLargeFileToDrive(zipFile, expireDateStr, "2/2 กำลังอัปโหลดภาพ:");
+                const zipResult = await uploadLargeFileToDrive(zipFile, expireDate.toISOString(), "2/2 กำลังอัปโหลดภาพ:");
 
                 document.getElementById('upload-progress-text').innerText = "กำลังบันทึกข้อมูลเข้าสู่ระบบ...";
                 await db.collection("referrals").add({
@@ -434,9 +493,8 @@
                 alert("ส่งต่อข้อมูลสำเร็จ!");
                 document.getElementById('upload-modal').classList.add('hidden');
                 document.getElementById('upload-form').reset();
-            } catch (error) {
-                alert("เกิดข้อผิดพลาด: " + error.message);
-            } finally {
+            } catch (error) { alert("เกิดข้อผิดพลาด: " + error.message); } 
+            finally {
                 btnSubmit.disabled = false;
                 document.getElementById('upload-progress-container').classList.add('hidden');
                 document.getElementById('upload-progress-bar').style.width = '0%';
