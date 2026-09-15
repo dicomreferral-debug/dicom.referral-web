@@ -1,505 +1,943 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ระบบส่งต่อภาพ DICOM - โรงพยาบาลวิเชียรบุรี</title>
-    <!-- ใช้ Tailwind สำหรับโครงสร้าง UI -->
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-    <style>
-        /* แต่งสี Scrollbar ให้ดูเป็นแอปพลิเคชัน */
-        ::-webkit-scrollbar { width: 8px; height: 8px; }
-        ::-webkit-scrollbar-track { background: #f1f5f9; }
-        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DICOM Referral Hub | ระบบส่งต่อภาพทางการแพทย์</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script>
+tailwind.config = {
+  darkMode: 'class',
+  theme: {
+    extend: {
+      fontFamily: { sans: ['Inter','Noto Sans Thai','sans-serif'] },
+      colors: {
+        brand: { 50:'#ecfeff',100:'#cffafe',200:'#a5f3fc',300:'#67e8f9',400:'#22d3ee',500:'#06b6d4',600:'#0891b2',700:'#0e7490',800:'#155e75',900:'#164e63' },
+        ink:   { 900:'#0b1220',800:'#111a2e',700:'#1a2540',600:'#26334f' }
+      },
+      boxShadow: { soft:'0 8px 30px -12px rgba(2,32,71,.18)', glow:'0 0 0 4px rgba(6,182,212,.12)' },
+      animation: { 'fade-up':'fadeUp .35s ease-out both', 'pop':'pop .2s ease-out both', shimmer:'shimmer 1.4s infinite' },
+      keyframes: {
+        fadeUp:{ '0%':{opacity:0,transform:'translateY(8px)'},'100%':{opacity:1,transform:'none'} },
+        pop:{ '0%':{opacity:0,transform:'scale(.96)'},'100%':{opacity:1,transform:'scale(1)'} },
+        shimmer:{ '100%':{transform:'translateX(100%)'} }
+      }
+    }
+  }
+}
+</script>
+<style>
+  ::-webkit-scrollbar{width:10px;height:10px}
+  ::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:99px;border:3px solid transparent;background-clip:content-box}
+  .dark ::-webkit-scrollbar-thumb{background:#334155;background-clip:content-box}
+  .skel{position:relative;overflow:hidden;background:#e2e8f0}
+  .dark .skel{background:#1e293b}
+  .skel::after{content:'';position:absolute;inset:0;transform:translateX(-100%);
+    background:linear-gradient(90deg,transparent,rgba(255,255,255,.55),transparent);animation:shimmer 1.4s infinite}
+  .dark .skel::after{background:linear-gradient(90deg,transparent,rgba(255,255,255,.07),transparent)}
+  @media print{ body *{visibility:hidden} #printable-area,#printable-area *{visibility:visible}
+    #printable-area{position:absolute;inset:0;width:100%} .no-print{display:none!important} }
+  .grid-bg{background-image:radial-gradient(circle at 1px 1px,rgba(148,163,184,.25) 1px,transparent 0);background-size:22px 22px}
+  input[type="date"]::-webkit-calendar-picker-indicator{cursor:pointer;opacity:.6}
+</style>
 </head>
-<body class="bg-gray-100 font-sans h-screen w-screen overflow-hidden flex flex-col">
 
-    <!-- Login Section -->
-    <div id="login-section" class="flex-1 flex items-center justify-center bg-gray-200 absolute inset-0 z-50">
-        <div class="max-w-md w-full bg-white p-8 rounded-lg shadow-lg border-t-4 border-cyan-600">
-            <h2 class="text-2xl font-bold mb-6 text-center text-cyan-700">เข้าสู่ระบบ DICOM Network</h2>
-            <form id="login-form">
-                <input type="email" id="email" placeholder="อีเมลโรงพยาบาล" required class="w-full mb-4 p-3 border rounded focus:outline-none focus:border-cyan-500">
-                <input type="password" id="password" placeholder="รหัสผ่าน" required class="w-full mb-6 p-3 border rounded focus:outline-none focus:border-cyan-500">
-                <button type="submit" id="btn-login" class="w-full bg-cyan-600 text-white p-3 rounded font-bold hover:bg-cyan-700 transition">เข้าสู่ระบบ</button>
-            </form>
-        </div>
+<body class="font-sans bg-slate-100 dark:bg-ink-900 text-slate-800 dark:text-slate-200 antialiased">
+
+<!-- ═══════════ TOAST ═══════════ -->
+<div id="toast-wrap" class="fixed top-5 right-5 z-[100] space-y-2 w-[min(92vw,360px)]"></div>
+
+<!-- ═══════════════════════════════════════════
+     LOGIN
+═══════════════════════════════════════════ -->
+<section id="login-section" class="hidden min-h-screen lg:grid lg:grid-cols-2">
+
+  <!-- Brand panel -->
+  <div class="relative hidden lg:flex flex-col justify-between p-12 bg-gradient-to-br from-brand-800 via-brand-700 to-ink-900 text-white overflow-hidden">
+    <div class="absolute inset-0 grid-bg opacity-40"></div>
+    <div class="absolute -top-24 -left-24 w-96 h-96 bg-brand-400/20 rounded-full blur-3xl"></div>
+    <div class="absolute bottom-0 right-0 w-80 h-80 bg-brand-300/10 rounded-full blur-3xl"></div>
+
+    <div class="relative flex items-center gap-3">
+      <div class="w-11 h-11 rounded-2xl bg-white/15 backdrop-blur grid place-items-center ring-1 ring-white/25">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 6v12a2 2 0 002 2h12a2 2 0 002-2V6M9 12l2 2 4-4"/></svg>
+      </div>
+      <div>
+        <p class="font-semibold tracking-tight">DICOM Referral Hub</p>
+        <p class="text-xs text-white/60">Secure Imaging Exchange</p>
+      </div>
     </div>
 
-    <!-- Main App (ซ่อนจนกว่าจะล็อกอิน) -->
-    <div id="dashboard-section" class="hidden flex-1 flex h-full">
-        
-        <!-- แถบเครื่องมือซ้ายสุด (Sidebar) -->
-        <div class="w-16 bg-cyan-800 flex flex-col items-center py-4 space-y-6 text-white shrink-0 shadow-lg z-10">
-            <div class="p-2 bg-cyan-600 rounded-lg cursor-pointer" title="หน้าหลัก">🏠</div>
-            <div class="p-2 hover:bg-cyan-700 rounded-lg cursor-pointer" title="อัปโหลด" onclick="document.getElementById('upload-modal').classList.remove('hidden')">➕</div>
-        </div>
-
-        <!-- แถบค้นหาและกรองข้อมูล (Filter Panel) -->
-        <div class="w-64 bg-cyan-50 border-r border-cyan-200 flex flex-col shrink-0">
-            <div class="bg-cyan-100 p-4 border-b border-cyan-200 font-bold text-cyan-800 flex items-center gap-2">
-                🔍 Patient Search
-            </div>
-            <div class="p-4 space-y-4 flex-1 overflow-y-auto text-sm">
-                <div>
-                    <label class="block text-cyan-800 font-semibold mb-1">คำค้นหา (Keyword)</label>
-                    <input type="text" id="filter-keyword" placeholder="ชื่อ หรือ HN" class="w-full p-2 border border-cyan-300 rounded focus:outline-none focus:border-cyan-500">
-                </div>
-                <div>
-                    <label class="block text-cyan-800 font-semibold mb-1">ตั้งแต่วันที่ (From Date)</label>
-                    <input type="date" id="filter-start" class="w-full p-2 border border-cyan-300 rounded">
-                </div>
-                <div>
-                    <label class="block text-cyan-800 font-semibold mb-1">ถึงวันที่ (To Date)</label>
-                    <input type="date" id="filter-end" class="w-full p-2 border border-cyan-300 rounded">
-                </div>
-                <div class="pt-4 flex gap-2">
-                    <button onclick="clearFilters()" class="flex-1 bg-gray-300 text-gray-700 p-2 rounded hover:bg-gray-400 font-semibold">Clear</button>
-                    <button onclick="renderTable()" class="flex-1 bg-cyan-600 text-white p-2 rounded hover:bg-cyan-700 font-semibold">Search</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- พื้นที่แสดงข้อมูลตาราง (Main Content) -->
-        <div class="flex-1 flex flex-col bg-white overflow-hidden">
-            <!-- Topbar -->
-            <div class="h-12 bg-cyan-600 flex justify-between items-center px-4 text-white shadow">
-                <span class="font-bold tracking-wide">DICOM Web Portal</span>
-                <div class="flex items-center gap-4 text-sm">
-                    <span>บัญชี: <strong id="current-hospital"></strong></span>
-                    <button id="btn-logout" class="bg-cyan-800 px-3 py-1 rounded hover:bg-cyan-900">ออกจากระบบ</button>
-                </div>
-            </div>
-
-            <!-- Tabs ผู้ป่วยเข้า / ผู้ป่วยออก -->
-            <div class="flex border-b bg-gray-50">
-                <button id="tab-inbox" onclick="switchTab('inbox')" class="flex-1 py-3 font-bold text-cyan-700 border-b-4 border-cyan-600 bg-white">📥 ผู้ป่วยเข้า (รับจากเครือข่าย)</button>
-                <button id="tab-outbox" onclick="switchTab('outbox')" class="flex-1 py-3 font-bold text-gray-500 hover:bg-gray-100 border-b-4 border-transparent">📤 ผู้ป่วยออก (ส่งต่อ)</button>
-            </div>
-
-            <!-- ตารางข้อมูล -->
-            <div class="flex-1 overflow-auto">
-                <table class="w-full text-left border-collapse whitespace-nowrap text-sm">
-                    <thead class="bg-cyan-50 sticky top-0 border-b border-cyan-200 text-cyan-800">
-                        <tr>
-                            <th class="p-3 font-semibold">วันที่/เวลา (Study Date)</th>
-                            <th class="p-3 font-semibold">HN (Patient ID)</th>
-                            <th class="p-3 font-semibold">ชื่อ-นามสกุล (Patient Name)</th>
-                            <th class="p-3 font-semibold" id="col-hospital-type">รพ.ต้นทาง (Location)</th>
-                            <th class="p-3 font-semibold text-center">จัดการ (Action)</th>
-                        </tr>
-                    </thead>
-                    <tbody id="referral-list" class="divide-y divide-gray-200">
-                        <!-- แถวข้อมูลจะถูกสร้างด้วย JS -->
-                    </tbody>
-                </table>
-            </div>
-            
-            <!-- แถบแสดงจำนวนรายการ -->
-            <div class="h-10 bg-gray-100 border-t flex items-center px-4 text-xs font-semibold text-gray-600">
-                แสดงผล: <span id="record-count" class="ml-1 text-cyan-700">0</span> รายการ
-            </div>
-        </div>
+    <div class="relative space-y-5">
+      <h1 class="text-4xl font-bold leading-tight">ส่งต่อภาพทางการแพทย์<br>อย่างปลอดภัย รวดเร็ว</h1>
+      <p class="text-white/70 max-w-md leading-relaxed">ระบบรับ–ส่งไฟล์ DICOM และผลอ่านระหว่างโรงพยาบาลในเครือข่าย พร้อมการเข้ารหัสและกำหนดวันหมดอายุอัตโนมัติ</p>
+      <div class="flex gap-8 pt-2 text-sm">
+        <div><p class="text-2xl font-bold">256-bit</p><p class="text-white/60">Encryption</p></div>
+        <div><p class="text-2xl font-bold">Realtime</p><p class="text-white/60">Sync</p></div>
+        <div><p class="text-2xl font-bold">Auto</p><p class="text-white/60">Expiry</p></div>
+      </div>
     </div>
 
-    <!-- Modal ดูผลอ่าน (PDF แบบแยกพิมพ์) -->
-    <div id="detail-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-40">
-        <div class="bg-white rounded-lg max-w-5xl w-full p-6 relative flex flex-col" style="height: 92vh;">
-            <div id="printable-area" class="flex-grow flex flex-col overflow-hidden">
-                <h2 class="text-xl font-bold mb-3 text-cyan-700">รายละเอียดข้อมูลผู้ป่วย</h2>
-                
-                <div class="grid grid-cols-2 gap-3 mb-4 bg-gray-50 p-3 rounded border text-sm">
-                    <p><strong>HN:</strong> <span id="modal-hn" class="font-semibold text-gray-800"></span></p>
-                    <p><strong>ชื่อ-นามสกุล:</strong> <span id="modal-name" class="font-semibold text-gray-800"></span></p>
-                    <p><strong>รพ.ต้นทาง:</strong> <span id="modal-sender" class="text-blue-700 font-semibold"></span></p>
-                    <p><strong>รพ.ปลายทาง:</strong> <span id="modal-receiver" class="text-green-700 font-semibold"></span></p>
-                </div>
+    <p class="relative text-xs text-white/40">© 2025 Radiology Network · PDPA Compliant</p>
+  </div>
 
-                <div class="mb-3 p-3 bg-cyan-50 rounded flex justify-between items-center border border-cyan-200">
-                    <span class="text-cyan-900 font-medium">📦 ไฟล์ภาพ DICOM (ZIP/RAR)</span>
-                    <a id="modal-zip-link" href="#" target="_blank" class="bg-cyan-600 text-white px-4 py-1.5 rounded text-sm font-bold hover:bg-cyan-700 shadow">
-                        ⬇️ ดาวน์โหลดภาพ
-                    </a>
-                </div>
-
-                <div class="flex-grow flex flex-col overflow-hidden">
-                    <div class="flex justify-between items-center mb-2">
-                        <span class="font-bold text-gray-700">📄 ผลอ่านเอกซเรย์ (PDF)</span>
-                        <div class="space-x-2">
-                            <a id="modal-pdf-download" href="#" target="_blank" class="bg-gray-700 text-white px-3 py-1 rounded text-sm hover:bg-gray-800">⬇️ ดาวน์โหลด PDF</a>
-                            <button onclick="printPdfDocument()" class="bg-green-600 text-white px-3 py-1 rounded text-sm font-bold hover:bg-green-700">🖨️ พิมพ์เอกสาร PDF</button>
-                        </div>
-                    </div>
-                    <!-- iframe สำหรับแสดง PDF -->
-                    <iframe id="modal-pdf-viewer" src="" class="w-full border rounded flex-grow bg-gray-200"></iframe>
-                </div>
-            </div>
-
-            <div class="flex justify-end border-t pt-3 mt-3">
-                <button onclick="document.getElementById('detail-modal').classList.add('hidden')" class="bg-gray-500 text-white px-6 py-2 rounded font-bold hover:bg-gray-600">ปิดหน้าต่าง</button>
-            </div>
+  <!-- Form panel -->
+  <div class="flex items-center justify-center p-6 sm:p-12 bg-white dark:bg-ink-800 min-h-screen lg:min-h-0">
+    <div class="w-full max-w-sm animate-fade-up">
+      <div class="lg:hidden flex items-center gap-3 mb-8">
+        <div class="w-10 h-10 rounded-xl bg-brand-600 grid place-items-center text-white">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M4 6h16M4 6v12a2 2 0 002 2h12a2 2 0 002-2V6"/></svg>
         </div>
+        <span class="font-semibold">DICOM Referral Hub</span>
+      </div>
+
+      <h2 class="text-2xl font-bold tracking-tight">เข้าสู่ระบบ</h2>
+      <p class="text-sm text-slate-500 dark:text-slate-400 mt-1 mb-8">ใช้บัญชีอีเมลของโรงพยาบาลของคุณ</p>
+
+      <form id="login-form" class="space-y-5">
+        <div>
+          <label class="block text-xs font-semibold mb-2 text-slate-600 dark:text-slate-300">อีเมล</label>
+          <div class="relative">
+            <svg class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M3 8l9 6 9-6M3 6h18v12H3z"/></svg>
+            <input id="email" type="email" required autocomplete="username" placeholder="hospital@example.go.th"
+              class="w-full pl-10 pr-3 py-3 text-sm rounded-xl bg-slate-50 dark:bg-ink-700 border border-slate-200 dark:border-ink-600 outline-none focus:border-brand-500 focus:shadow-glow transition">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold mb-2 text-slate-600 dark:text-slate-300">รหัสผ่าน</label>
+          <div class="relative">
+            <svg class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zM8 11V7a4 4 0 118 0v4"/></svg>
+            <input id="password" type="password" required autocomplete="current-password" placeholder="••••••••"
+              class="w-full pl-10 pr-11 py-3 text-sm rounded-xl bg-slate-50 dark:bg-ink-700 border border-slate-200 dark:border-ink-600 outline-none focus:border-brand-500 focus:shadow-glow transition">
+            <button type="button" id="toggle-pw" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-brand-600 transition">
+              <svg class="w-[18px] h-[18px]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" d="M2.5 12S5.5 5.5 12 5.5 21.5 12 21.5 12 18.5 18.5 12 18.5 2.5 12 2.5 12z"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <p id="login-error" class="hidden text-xs text-rose-600 bg-rose-50 dark:bg-rose-500/10 rounded-lg px-3 py-2"></p>
+
+        <button id="btn-login" type="submit"
+          class="w-full py-3 rounded-xl bg-brand-600 hover:bg-brand-700 active:scale-[.99] text-white text-sm font-semibold shadow-soft transition disabled:opacity-60 flex items-center justify-center gap-2">
+          <span>เข้าสู่ระบบ</span>
+        </button>
+      </form>
+
+      <p class="text-[11px] text-slate-400 mt-8 text-center leading-relaxed">
+        การเข้าใช้งานถือว่ายอมรับนโยบายคุ้มครองข้อมูลส่วนบุคคล<br>ข้อมูลผู้ป่วยถูกเข้ารหัสระหว่างการรับส่ง
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════
+     DASHBOARD
+═══════════════════════════════════════════ -->
+<section id="dashboard-section" class="hidden min-h-screen">
+<div class="flex">
+
+  <!-- Sidebar -->
+  <aside id="sidebar" class="fixed lg:sticky top-0 z-40 h-screen w-[260px] -translate-x-full lg:translate-x-0 transition-transform duration-300
+         bg-ink-900 dark:bg-black/40 dark:backdrop-blur-xl text-slate-300 flex flex-col border-r border-white/5 shrink-0">
+
+    <div class="p-5 flex items-center gap-3 border-b border-white/5">
+      <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-brand-400 to-brand-700 grid place-items-center text-white shrink-0">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M4 6h16M4 6v12a2 2 0 002 2h12a2 2 0 002-2V6M9 12l2 2 4-4"/></svg>
+      </div>
+      <div class="min-w-0">
+        <p class="text-sm font-semibold text-white truncate">DICOM Hub</p>
+        <p class="text-[11px] text-slate-500">Referral System</p>
+      </div>
     </div>
 
-    <!-- Modal ส่งข้อมูล (Upload) -->
-    <div id="upload-modal" class="hidden fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50">
-        <div class="bg-white rounded-lg max-w-2xl w-full p-6 shadow-2xl">
-            <h2 class="text-2xl font-bold mb-6 text-cyan-700">ฟอร์มส่งต่อข้อมูล</h2>
-            <form id="upload-form">
-                <div class="grid grid-cols-2 gap-4 mb-4">
-                    <div>
-                        <label class="block text-sm font-bold mb-1">HN</label>
-                        <input type="text" id="upload-hn" required class="w-full p-2 border rounded focus:border-cyan-500 focus:outline-none">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-bold mb-1">ชื่อ-นามสกุล</label>
-                        <input type="text" id="upload-name" required class="w-full p-2 border rounded focus:border-cyan-500 focus:outline-none">
-                    </div>
-                </div>
-                <div class="grid grid-cols-2 gap-4 mb-4">
-                    <div>
-                        <label class="block text-sm font-bold mb-1">โรงพยาบาลปลายทาง</label>
-                        <select id="upload-receiver" required class="w-full p-2 border rounded focus:border-cyan-500 focus:outline-none">
-                            <option value="">-- กำลังโหลดรายชื่อ... --</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-bold mb-1">ระยะเวลาแสดงข้อมูล</label>
-                        <select id="upload-expire" class="w-full p-2 border rounded focus:border-cyan-500 focus:outline-none">
-                            <option value="7">7 วัน</option>
-                            <option value="14">14 วัน</option>
-                            <option value="30">1 เดือน</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="mb-4 p-4 bg-gray-50 border rounded-lg">
-                    <label class="block text-sm font-bold mb-1 text-red-600">1. แนบไฟล์ผลอ่าน (PDF)</label>
-                    <input type="file" id="upload-pdf" accept=".pdf" required class="w-full mb-4">
-                    <label class="block text-sm font-bold mb-1 text-cyan-600">2. แนบไฟล์ภาพ DICOM (ZIP/RAR)</label>
-                    <input type="file" id="upload-zip" accept=".zip,.rar" required class="w-full">
-                </div>
+    <nav class="p-3 space-y-1 flex-1 overflow-y-auto">
+      <p class="px-3 pt-3 pb-2 text-[10px] font-bold tracking-widest text-slate-500">รายการ</p>
 
-                <div id="upload-progress-container" class="hidden mb-4">
-                    <div class="text-sm font-bold text-cyan-600" id="upload-progress-text">กำลังอัปโหลด...</div>
-                    <div class="w-full bg-gray-200 rounded-full h-4 mt-1 overflow-hidden">
-                        <div id="upload-progress-bar" class="bg-cyan-500 h-4 rounded-full transition-all duration-300" style="width: 0%"></div>
-                    </div>
-                </div>
+      <button id="tab-inbox" data-tab="inbox" class="nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition">
+        <svg class="w-[18px] h-[18px] shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0h-4l-1.5 2h-5L8 13H4m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5"/></svg>
+        <span class="flex-1 text-left">ผู้ป่วยเข้า</span>
+        <span id="badge-inbox" class="text-[10px] px-2 py-0.5 rounded-full bg-white/10">0</span>
+      </button>
 
-                <div class="flex justify-end space-x-3 border-t pt-4">
-                    <button type="button" onclick="document.getElementById('upload-modal').classList.add('hidden')" class="bg-gray-400 text-white px-6 py-2 rounded font-bold hover:bg-gray-500">ยกเลิก</button>
-                    <button type="submit" id="btn-submit" class="bg-cyan-600 text-white px-6 py-2 rounded font-bold hover:bg-cyan-700 shadow-md">ส่งข้อมูล</button>
-                </div>
-            </form>
+      <button id="tab-outbox" data-tab="outbox" class="nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition">
+        <svg class="w-[18px] h-[18px] shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 16V4m0 0L8 8m4-4l4 4M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>
+        <span class="flex-1 text-left">ผู้ป่วยออก</span>
+        <span id="badge-outbox" class="text-[10px] px-2 py-0.5 rounded-full bg-white/10">0</span>
+      </button>
+
+      <p class="px-3 pt-5 pb-2 text-[10px] font-bold tracking-widest text-slate-500">การทำงาน</p>
+
+      <button id="btn-open-upload" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold
+             bg-gradient-to-r from-brand-500 to-brand-600 text-white hover:from-brand-400 hover:to-brand-500 shadow-lg shadow-brand-900/40 transition">
+        <svg class="w-[18px] h-[18px]" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M12 5v14m-7-7h14"/></svg>
+        ส่งต่อผู้ป่วยใหม่
+      </button>
+    </nav>
+
+    <div class="p-3 border-t border-white/5 space-y-2">
+      <button id="btn-theme" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm hover:bg-white/5 transition">
+        <svg class="w-[18px] h-[18px]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M21 12.8A9 9 0 1111.2 3a7 7 0 009.8 9.8z"/></svg>
+        <span id="label-theme">โหมดมืด</span>
+      </button>
+
+      <div class="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-white/5">
+        <div id="avatar-initial" class="w-9 h-9 rounded-lg bg-brand-500/20 text-brand-300 grid place-items-center text-xs font-bold shrink-0">รพ</div>
+        <div class="min-w-0 flex-1">
+          <p id="current-hospital" class="text-xs font-semibold text-white truncate">-</p>
+          <p class="text-[10px] text-slate-500">ออนไลน์</p>
         </div>
+        <button id="btn-logout" title="ออกจากระบบ" class="text-slate-400 hover:text-rose-400 transition p-1">
+          <svg class="w-[18px] h-[18px]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 8H6a2 2 0 01-2-2V6a2 2 0 012-2h7"/></svg>
+        </button>
+      </div>
+    </div>
+  </aside>
+  <div id="sidebar-backdrop" class="hidden fixed inset-0 bg-black/50 z-30 lg:hidden"></div>
+
+  <!-- Main -->
+  <main class="flex-1 min-w-0">
+
+    <!-- Topbar -->
+    <header class="sticky top-0 z-20 bg-white/80 dark:bg-ink-800/80 backdrop-blur-xl border-b border-slate-200 dark:border-ink-600">
+      <div class="px-4 sm:px-6 h-16 flex items-center gap-3">
+        <button id="btn-menu" class="lg:hidden p-2 -ml-2 rounded-lg hover:bg-slate-100 dark:hover:bg-ink-700">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M4 6h16M4 12h16M4 18h16"/></svg>
+        </button>
+
+        <div>
+          <h1 id="page-title" class="text-base font-bold tracking-tight">ผู้ป่วยเข้า</h1>
+          <p class="text-[11px] text-slate-500 hidden sm:block">รายการส่งต่อภาพ DICOM ทั้งหมดของหน่วยงาน</p>
+        </div>
+
+        <div class="flex-1"></div>
+
+        <div class="relative hidden md:block w-72">
+          <svg class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M21 21l-4.3-4.3M17 10.5a6.5 6.5 0 11-13 0 6.5 6.5 0 0113 0z"/></svg>
+          <input id="filter-keyword" type="text" placeholder="ค้นหา HN หรือชื่อผู้ป่วย…"
+            class="w-full pl-9 pr-12 py-2.5 text-sm rounded-xl bg-slate-100 dark:bg-ink-700 border border-transparent focus:bg-white dark:focus:bg-ink-700 focus:border-brand-500 outline-none transition">
+          <kbd class="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] text-slate-400 border border-slate-300 dark:border-ink-600 rounded px-1.5 py-0.5">⌘K</kbd>
+        </div>
+
+        <button id="btn-open-upload-top" class="md:hidden p-2 rounded-lg bg-brand-600 text-white">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M12 5v14m-7-7h14"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <div class="p-4 sm:p-6 space-y-6">
+
+      <!-- Stat cards -->
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <div class="p-4 rounded-2xl bg-white dark:bg-ink-800 border border-slate-200 dark:border-ink-600 shadow-soft">
+          <div class="flex items-center justify-between">
+            <p class="text-[11px] font-semibold text-slate-500">ทั้งหมด</p>
+            <div class="w-8 h-8 rounded-lg bg-slate-100 dark:bg-ink-700 grid place-items-center text-slate-500">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M4 7h16M4 12h16M4 17h10"/></svg>
+            </div>
+          </div>
+          <p id="stat-total" class="text-2xl font-bold mt-2">0</p>
+        </div>
+
+        <div class="p-4 rounded-2xl bg-white dark:bg-ink-800 border border-slate-200 dark:border-ink-600 shadow-soft">
+          <div class="flex items-center justify-between">
+            <p class="text-[11px] font-semibold text-slate-500">วันนี้</p>
+            <div class="w-8 h-8 rounded-lg bg-brand-50 dark:bg-brand-500/15 grid place-items-center text-brand-600">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M8 7V3m8 4V3M3 11h18M5 5h14a2 2 0 012 2v12a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2z"/></svg>
+            </div>
+          </div>
+          <p id="stat-today" class="text-2xl font-bold mt-2 text-brand-600">0</p>
+        </div>
+
+        <div class="p-4 rounded-2xl bg-white dark:bg-ink-800 border border-slate-200 dark:border-ink-600 shadow-soft">
+          <div class="flex items-center justify-between">
+            <p class="text-[11px] font-semibold text-slate-500">ใกล้หมดอายุ</p>
+            <div class="w-8 h-8 rounded-lg bg-amber-50 dark:bg-amber-500/15 grid place-items-center text-amber-600">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M12 8v4l3 2m6-2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            </div>
+          </div>
+          <p id="stat-soon" class="text-2xl font-bold mt-2 text-amber-600">0</p>
+        </div>
+
+        <div class="p-4 rounded-2xl bg-white dark:bg-ink-800 border border-slate-200 dark:border-ink-600 shadow-soft">
+          <div class="flex items-center justify-between">
+            <p class="text-[11px] font-semibold text-slate-500">หมดอายุแล้ว</p>
+            <div class="w-8 h-8 rounded-lg bg-rose-50 dark:bg-rose-500/15 grid place-items-center text-rose-600">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M10 11v6m4-6v6M4 7h16M9 7V5a1 1 0 011-1h4a1 1 0 011 1v2m-9 0l1 13a1 1 0 001 1h8a1 1 0 001-1l1-13"/></svg>
+            </div>
+          </div>
+          <p id="stat-expired" class="text-2xl font-bold mt-2 text-rose-600">0</p>
+        </div>
+      </div>
+
+      <!-- Filters -->
+      <div class="p-4 rounded-2xl bg-white dark:bg-ink-800 border border-slate-200 dark:border-ink-600 shadow-soft">
+        <div class="flex flex-col lg:flex-row lg:items-end gap-3">
+          <div class="flex-1 md:hidden">
+            <label class="block text-[11px] font-semibold text-slate-500 mb-1.5">ค้นหา</label>
+            <input type="text" id="filter-keyword-mobile" placeholder="HN หรือชื่อผู้ป่วย"
+              class="w-full px-3 py-2.5 text-sm rounded-xl bg-slate-50 dark:bg-ink-700 border border-slate-200 dark:border-ink-600 outline-none focus:border-brand-500 transition">
+          </div>
+          <div class="flex-1">
+            <label class="block text-[11px] font-semibold text-slate-500 mb-1.5">ตั้งแต่วันที่</label>
+            <input type="date" id="filter-start"
+              class="w-full px-3 py-2.5 text-sm rounded-xl bg-slate-50 dark:bg-ink-700 border border-slate-200 dark:border-ink-600 outline-none focus:border-brand-500 transition">
+          </div>
+          <div class="flex-1">
+            <label class="block text-[11px] font-semibold text-slate-500 mb-1.5">ถึงวันที่</label>
+            <input type="date" id="filter-end"
+              class="w-full px-3 py-2.5 text-sm rounded-xl bg-slate-50 dark:bg-ink-700 border border-slate-200 dark:border-ink-600 outline-none focus:border-brand-500 transition">
+          </div>
+          <div class="flex gap-2">
+            <button id="btn-clear" class="px-4 py-2.5 rounded-xl text-sm font-medium border border-slate-200 dark:border-ink-600 hover:bg-slate-50 dark:hover:bg-ink-700 transition">ล้างตัวกรอง</button>
+            <button id="btn-export" class="px-4 py-2.5 rounded-xl text-sm font-medium bg-slate-900 dark:bg-white dark:text-ink-900 text-white hover:opacity-90 transition flex items-center gap-2">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M12 4v12m0 0l-4-4m4 4l4-4M4 20h16"/></svg>CSV
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Table -->
+      <div class="rounded-2xl bg-white dark:bg-ink-800 border border-slate-200 dark:border-ink-600 shadow-soft overflow-hidden">
+        <div class="px-5 py-4 flex items-center justify-between border-b border-slate-200 dark:border-ink-600">
+          <div class="flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            <h3 class="text-sm font-bold">รายการส่งต่อ</h3>
+          </div>
+          <span id="record-count" class="text-xs font-medium px-2.5 py-1 rounded-full bg-slate-100 dark:bg-ink-700 text-slate-600 dark:text-slate-300">0 รายการ</span>
+        </div>
+
+        <div class="overflow-x-auto hidden md:block">
+          <table class="w-full text-sm">
+            <thead class="bg-slate-50 dark:bg-ink-700/50 text-[11px] uppercase tracking-wider text-slate-500">
+              <tr>
+                <th class="px-5 py-3 text-left font-bold cursor-pointer select-none hover:text-brand-600" data-sort="createdAt">วันที่ / เวลา</th>
+                <th class="px-5 py-3 text-left font-bold cursor-pointer select-none hover:text-brand-600" data-sort="hn">HN</th>
+                <th class="px-5 py-3 text-left font-bold cursor-pointer select-none hover:text-brand-600" data-sort="patientName">ชื่อ-นามสกุล</th>
+                <th id="col-hospital-type" class="px-5 py-3 text-left font-bold">รพ.ต้นทาง</th>
+                <th class="px-5 py-3 text-left font-bold">สถานะ</th>
+                <th class="px-5 py-3 text-right font-bold">จัดการ</th>
+              </tr>
+            </thead>
+            <tbody id="referral-list" class="divide-y divide-slate-100 dark:divide-ink-700"></tbody>
+          </table>
+        </div>
+
+        <div id="referral-list-mobile" class="md:hidden divide-y divide-slate-100 dark:divide-ink-700"></div>
+      </div>
+
+    </div>
+  </main>
+</div>
+</section>
+
+<!-- ═══════════ DETAIL MODAL ═══════════ -->
+<div id="detail-modal" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm p-0 sm:p-6 overflow-y-auto">
+  <div class="bg-white dark:bg-ink-800 w-full sm:max-w-5xl mx-auto sm:rounded-2xl shadow-2xl min-h-full sm:min-h-0 animate-pop overflow-hidden">
+
+    <div class="no-print px-5 py-4 flex items-center justify-between border-b border-slate-200 dark:border-ink-600 sticky top-0 bg-white dark:bg-ink-800 z-10">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-xl bg-brand-50 dark:bg-brand-500/15 text-brand-600 grid place-items-center">
+          <svg class="w-[18px] h-[18px]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h6l6 6v11a2 2 0 01-2 2z"/></svg>
+        </div>
+        <h3 class="font-bold">รายละเอียดการส่งต่อ</h3>
+      </div>
+      <div class="flex items-center gap-2">
+        <button onclick="printPdfDocument()" class="px-3 py-2 rounded-lg text-xs font-semibold border border-slate-200 dark:border-ink-600 hover:bg-slate-50 dark:hover:bg-ink-700 flex items-center gap-1.5 transition">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M6 9V3h12v6M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2M6 14h12v7H6z"/></svg>พิมพ์
+        </button>
+        <button id="btn-close-detail" class="w-9 h-9 rounded-lg hover:bg-slate-100 dark:hover:bg-ink-700 grid place-items-center transition">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
     </div>
 
-    <!-- โค้ด JavaScript -->
-    <script>
-        // ข้อมูลการเชื่อมต่อ Firebase และ GAS (ตัวเดิม)
-        const firebaseConfig = {
-              apiKey: "AIzaSyDQSXj3-ojPsXbs2i7udVIVPL2E-byCBQc",
-              authDomain: "dicom-referral.firebaseapp.com",
-              projectId: "dicom-referral",
-              storageBucket: "dicom-referral.firebasestorage.app",
-              messagingSenderId: "1013234791188",
-              appId: "1:1013234791188:web:f169e4602dbf4735e40801",
-              measurementId: "G-304XVHFND5"
-        };
-        const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyVbrZpH2N8zZBVaAcqLJi4LCLHeQPa7t30Y1Cnq6Pl2dUD2lXw2syhRV7R7537PYjMmQ/exec"; 
+    <div id="printable-area" class="p-5 sm:p-6 space-y-5">
+      <div class="grid sm:grid-cols-2 gap-3">
+        <div class="p-4 rounded-xl bg-slate-50 dark:bg-ink-700/50 border border-slate-200 dark:border-ink-600">
+          <p class="text-[11px] font-semibold text-slate-500 mb-1">HN</p>
+          <p id="modal-hn" class="font-bold text-lg">-</p>
+        </div>
+        <div class="p-4 rounded-xl bg-slate-50 dark:bg-ink-700/50 border border-slate-200 dark:border-ink-600">
+          <p class="text-[11px] font-semibold text-slate-500 mb-1">ชื่อ-นามสกุล</p>
+          <p id="modal-name" class="font-bold text-lg">-</p>
+        </div>
+        <div class="p-4 rounded-xl bg-slate-50 dark:bg-ink-700/50 border border-slate-200 dark:border-ink-600">
+          <p class="text-[11px] font-semibold text-slate-500 mb-1">โรงพยาบาลต้นทาง</p>
+          <p id="modal-sender" class="font-semibold">-</p>
+        </div>
+        <div class="p-4 rounded-xl bg-slate-50 dark:bg-ink-700/50 border border-slate-200 dark:border-ink-600">
+          <p class="text-[11px] font-semibold text-slate-500 mb-1">โรงพยาบาลปลายทาง</p>
+          <p id="modal-receiver" class="font-semibold">-</p>
+        </div>
+      </div>
 
-        firebase.initializeApp(firebaseConfig);
-        const auth = firebase.auth();
-        const db = firebase.firestore();
+      <div class="no-print flex flex-wrap gap-2">
+        <a id="modal-zip-link" href="#" target="_blank" rel="noopener"
+          class="flex-1 min-w-[200px] px-4 py-3 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold flex items-center justify-center gap-2 transition">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M12 4v12m0 0l-4-4m4 4l4-4M4 20h16"/></svg>ดาวน์โหลดไฟล์ DICOM (.zip)
+        </a>
+        <a id="modal-pdf-download" href="#" target="_blank" rel="noopener"
+          class="flex-1 min-w-[200px] px-4 py-3 rounded-xl border border-slate-200 dark:border-ink-600 hover:bg-slate-50 dark:hover:bg-ink-700 text-sm font-semibold flex items-center justify-center gap-2 transition">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h6l6 6v11a2 2 0 01-2 2z"/></svg>ดาวน์โหลดผลอ่าน (PDF)
+        </a>
+      </div>
 
-        let hospitalMap = {};
-        let allReferrals = []; // เก็บข้อมูลที่ดึงมาทั้งหมดเพื่อใช้ Filter
-        let currentTab = 'inbox'; // สถานะ Tab เริ่มต้น
+      <div class="rounded-xl overflow-hidden border border-slate-200 dark:border-ink-600 bg-slate-100 dark:bg-ink-900">
+        <iframe id="modal-pdf-viewer" class="w-full h-[65vh] sm:h-[600px]" frameborder="0"></iframe>
+      </div>
+    </div>
+  </div>
+</div>
 
-        function getHospitalDisplayName(email) { return hospitalMap[email] || email; }
+<!-- ═══════════ UPLOAD MODAL ═══════════ -->
+<div id="upload-modal" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm p-0 sm:p-6 overflow-y-auto">
+  <div class="bg-white dark:bg-ink-800 w-full sm:max-w-xl mx-auto sm:rounded-2xl shadow-2xl min-h-full sm:min-h-0 animate-pop">
 
-        async function loadHospitals() {
-            try {
-                const snapshot = await db.collection("hospitals").get();
-                const selectEl = document.getElementById('upload-receiver');
-                selectEl.innerHTML = '<option value="">-- เลือกโรงพยาบาล --</option>';
-                hospitalMap = {};
-                snapshot.forEach((doc) => {
-                    const data = doc.data();
-                    hospitalMap[data.email] = data.name;
-                    const option = document.createElement('option');
-                    option.value = data.email; option.textContent = data.name;
-                    selectEl.appendChild(option);
-                });
-                if (auth.currentUser) document.getElementById('current-hospital').innerText = getHospitalDisplayName(auth.currentUser.email);
-            } catch (error) { console.error(error); }
-        }
+    <div class="px-5 py-4 flex items-center justify-between border-b border-slate-200 dark:border-ink-600 sticky top-0 bg-white dark:bg-ink-800 z-10">
+      <div>
+        <h3 class="font-bold">ส่งต่อผู้ป่วยใหม่</h3>
+        <p class="text-[11px] text-slate-500">กรอกข้อมูลและแนบไฟล์ผลอ่าน + ไฟล์ DICOM</p>
+      </div>
+      <button id="btn-close-upload" class="w-9 h-9 rounded-lg hover:bg-slate-100 dark:hover:bg-ink-700 grid place-items-center transition">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+    </div>
 
-        // จัดการ Login / Logout
-        document.getElementById('login-form').addEventListener('submit', function(e) {
-            e.preventDefault();
-            const btn = document.getElementById('btn-login');
-            btn.disabled = true; btn.innerText = "กำลังเข้าสู่ระบบ...";
-            auth.signInWithEmailAndPassword(document.getElementById('email').value.trim(), document.getElementById('password').value)
-                .catch(err => { alert("เข้าสู่ระบบไม่สำเร็จ"); btn.disabled = false; btn.innerText = "เข้าสู่ระบบ"; });
+    <form id="upload-form" class="p-5 sm:p-6 space-y-4">
+      <div class="grid sm:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-xs font-semibold mb-1.5">HN <span class="text-rose-500">*</span></label>
+          <input id="upload-hn" type="text" required placeholder="เช่น 00123456"
+            class="w-full px-3 py-2.5 text-sm rounded-xl bg-slate-50 dark:bg-ink-700 border border-slate-200 dark:border-ink-600 outline-none focus:border-brand-500 transition">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold mb-1.5">ชื่อ-นามสกุล <span class="text-rose-500">*</span></label>
+          <input id="upload-name" type="text" required placeholder="นาย ตัวอย่าง ทดสอบ"
+            class="w-full px-3 py-2.5 text-sm rounded-xl bg-slate-50 dark:bg-ink-700 border border-slate-200 dark:border-ink-600 outline-none focus:border-brand-500 transition">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold mb-1.5">โรงพยาบาลปลายทาง <span class="text-rose-500">*</span></label>
+          <select id="upload-receiver" required
+            class="w-full px-3 py-2.5 text-sm rounded-xl bg-slate-50 dark:bg-ink-700 border border-slate-200 dark:border-ink-600 outline-none focus:border-brand-500 transition">
+            <option value="">— เลือกโรงพยาบาล —</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold mb-1.5">อายุไฟล์ <span class="text-rose-500">*</span></label>
+          <select id="upload-expire" required
+            class="w-full px-3 py-2.5 text-sm rounded-xl bg-slate-50 dark:bg-ink-700 border border-slate-200 dark:border-ink-600 outline-none focus:border-brand-500 transition">
+            <option value="7">7 วัน</option>
+            <option value="15">15 วัน</option>
+            <option value="30" selected>30 วัน</option>
+            <option value="60">60 วัน</option>
+            <option value="90">90 วัน</option>
+          </select>
+        </div>
+      </div>
+
+      <div>
+        <label class="block text-xs font-semibold mb-1.5">ไฟล์ DICOM (.zip) <span class="text-rose-500">*</span></label>
+        <label id="drop-zip" class="flex flex-col items-center justify-center gap-1.5 px-4 py-6 rounded-xl border-2 border-dashed border-slate-300 dark:border-ink-600 cursor-pointer hover:border-brand-500 hover:bg-brand-50/40 dark:hover:bg-brand-500/5 transition text-center">
+          <svg class="w-7 h-7 text-brand-500" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" d="M7 16a4 4 0 01-.9-7.9A5 5 0 1116.9 7 4.5 4.5 0 0117 16h-1m-4-5v9m0-9l-3 3m3-3l3 3"/></svg>
+          <p class="text-sm font-medium">ลากไฟล์มาวาง หรือคลิกเพื่อเลือก</p>
+          <p id="zip-hint" class="text-[11px] text-slate-500">รองรับ .zip ขนาดใหญ่ (แบ่งอัปโหลดอัตโนมัติ)</p>
+          <input id="upload-zip" type="file" accept=".zip" required class="hidden">
+        </label>
+      </div>
+
+      <div>
+        <label class="block text-xs font-semibold mb-1.5">ผลอ่าน (PDF) <span class="text-rose-500">*</span></label>
+        <label id="drop-pdf" class="flex items-center gap-3 px-4 py-3.5 rounded-xl border-2 border-dashed border-slate-300 dark:border-ink-600 cursor-pointer hover:border-brand-500 transition">
+          <svg class="w-5 h-5 text-slate-400 shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h6l6 6v11a2 2 0 01-2 2z"/></svg>
+          <span id="pdf-hint" class="text-[11px] text-slate-500">เลือกไฟล์ PDF ผลอ่าน</span>
+          <input id="upload-pdf" type="file" accept="application/pdf" required class="hidden">
+        </label>
+      </div>
+
+      <div id="upload-progress-container" class="hidden p-4 rounded-xl bg-brand-50 dark:bg-brand-500/10 border border-brand-200 dark:border-brand-500/20">
+        <p id="upload-progress-text" class="text-xs font-semibold text-brand-800 dark:text-brand-300 mb-2">กำลังเตรียมข้อมูล…</p>
+        <div class="h-2 rounded-full bg-brand-200/60 dark:bg-brand-900/40 overflow-hidden">
+          <div id="upload-progress-bar" class="h-full w-0 rounded-full bg-gradient-to-r from-brand-400 to-brand-600 transition-all duration-300"></div>
+        </div>
+      </div>
+
+      <div class="flex gap-2 pt-1">
+        <button type="button" id="btn-cancel-upload" class="px-4 py-3 rounded-xl text-sm font-semibold border border-slate-200 dark:border-ink-600 hover:bg-slate-50 dark:hover:bg-ink-700 transition">ยกเลิก</button>
+        <button id="btn-submit" type="submit"
+          class="flex-1 px-4 py-3 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold shadow-soft transition disabled:opacity-60 flex items-center justify-center gap-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M12 19V5m0 0l-5 5m5-5l5 5"/></svg>
+          <span>อัปโหลดและส่งต่อ</span>
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ═══════════ FIREBASE (compat) ═══════════ -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
+<script>
+/* ═══════════ CONFIG ═══════════ */
+const firebaseConfig = {
+  apiKey: "AIzaSyDQSXj3-ojPsXbs2i7udVIVPL2E-byCBQc",
+  authDomain: "dicom-referral.firebaseapp.com",
+  projectId: "dicom-referral",
+  storageBucket: "dicom-referral.firebasestorage.app",
+  messagingSenderId: "1013234791188",
+  appId: "1:1013234791188:web:f169e4602dbf4735e40801",
+  measurementId: "G-304XVHFND5"
+};
+const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyVbrZpH2N8zZBVaAcqLJi4LCLHeQPa7t30Y1Cnq6Pl2dUD2lXw2syhRV7R7537PYjMmQ/exec";
+
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db   = firebase.firestore();
+
+let hospitalMap = {};      // email -> ชื่อโรงพยาบาล
+let allReferrals = [];
+let currentTab = 'inbox';
+let unsubscribe = null;
+let sortKey = 'createdAt', sortDir = -1;
+
+/* ═══════════ HELPERS ═══════════ */
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+function toast(msg, type){
+  const map = { info:'bg-slate-900 text-white', success:'bg-emerald-600 text-white', error:'bg-rose-600 text-white', warn:'bg-amber-500 text-white' };
+  const el = document.createElement('div');
+  el.className = (map[type] || map.info) + ' px-4 py-3 rounded-xl shadow-2xl text-sm font-medium animate-fade-up';
+  el.textContent = msg;
+  $('toast-wrap').appendChild(el);
+  setTimeout(function(){ el.style.transition='.3s'; el.style.opacity='0'; setTimeout(function(){ el.remove(); },300); }, 3800);
+}
+const toDate  = v => (v && v.toDate) ? v.toDate() : (v ? new Date(v) : null);
+const fmtDate = d => d ? d.toLocaleDateString('th-TH',{day:'2-digit',month:'short',year:'2-digit'}) : '-';
+const fmtTime = d => d ? d.toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'}) : '';
+const fmtSize = b => b < 1048576 ? (b/1024).toFixed(0)+' KB' : (b/1048576).toFixed(1)+' MB';
+const hospName = email => hospitalMap[email] || email || '-';
+
+function expiryInfo(data){
+  const ex = toDate(data.expireAt);
+  if(!ex) return { label:'ไม่กำหนด', cls:'bg-slate-100 text-slate-600 dark:bg-ink-700 dark:text-slate-300', state:'none' };
+  const days = Math.ceil((ex - new Date())/86400000);
+  if(days < 0)  return { label:'หมดอายุแล้ว', cls:'bg-rose-50 text-rose-700 dark:bg-rose-500/15 dark:text-rose-300', state:'expired' };
+  if(days <= 3) return { label:'เหลือ '+days+' วัน', cls:'bg-amber-50 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300', state:'soon' };
+  return { label:'เหลือ '+days+' วัน', cls:'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300', state:'ok' };
+}
+
+/* ═══════════ THEME ═══════════ */
+function applyTheme(t){
+  document.documentElement.classList.toggle('dark', t === 'dark');
+  $('label-theme').textContent = t === 'dark' ? 'โหมดสว่าง' : 'โหมดมืด';
+  localStorage.setItem('theme', t);
+}
+applyTheme(localStorage.getItem('theme') || 'light');
+$('btn-theme').onclick = () => applyTheme(document.documentElement.classList.contains('dark') ? 'light' : 'dark');
+
+/* ═══════════ AUTH ═══════════ */
+$('toggle-pw').onclick = function(){ const p = $('password'); p.type = p.type === 'password' ? 'text' : 'password'; };
+
+$('login-form').addEventListener('submit', async function(e){
+  e.preventDefault();
+  const btn = $('btn-login'); btn.disabled = true; btn.innerHTML = '<span>กำลังตรวจสอบ…</span>';
+  $('login-error').classList.add('hidden');
+  try {
+    await auth.signInWithEmailAndPassword($('email').value.trim(), $('password').value);
+  } catch (err) {
+    $('login-error').textContent = 'อีเมลหรือรหัสผ่านไม่ถูกต้อง';
+    $('login-error').classList.remove('hidden');
+  } finally {
+    btn.disabled = false; btn.innerHTML = '<span>เข้าสู่ระบบ</span>';
+  }
+});
+
+$('btn-logout').onclick = () => auth.signOut();
+
+auth.onAuthStateChanged(async function(user){
+  if (user) {
+    $('login-section').classList.add('hidden');
+    $('dashboard-section').classList.remove('hidden');
+    await loadHospitals();
+    const name = hospName(user.email);
+    $('current-hospital').textContent = name;
+    $('avatar-initial').textContent = name.replace(/^โรงพยาบาล|^รพ\.?\s?/,'').slice(0,2) || 'รพ';
+    fetchReferralsData(user.email);
+    switchTab('inbox');
+  } else {
+    if (unsubscribe) unsubscribe();
+    allReferrals = [];
+    $('dashboard-section').classList.add('hidden');
+    $('login-section').classList.remove('hidden');
+  }
+});
+
+/* ═══════════ HOSPITALS ═══════════ */
+async function loadHospitals(){
+  const sel = $('upload-receiver');
+  sel.innerHTML = '<option value="">— เลือกโรงพยาบาล —</option>';
+  hospitalMap = {};
+  try {
+    const snap = await db.collection('hospitals').get();
+    snap.forEach(function(d){
+      const h = d.data();
+      hospitalMap[h.email] = h.name;
+      if (h.email !== (auth.currentUser && auth.currentUser.email))
+        sel.insertAdjacentHTML('beforeend', '<option value="'+esc(h.email)+'">'+esc(h.name)+'</option>');
+    });
+  } catch (e) { toast('โหลดรายชื่อโรงพยาบาลไม่สำเร็จ','warn'); }
+}
+
+/* ═══════════ DATA (realtime) ═══════════ */
+function fetchReferralsData(email){
+  showSkeleton();
+  if (unsubscribe) unsubscribe();
+  unsubscribe = db.collection('referrals').onSnapshot(function(snap){
+    allReferrals = [];
+    snap.forEach(function(d){ allReferrals.push(Object.assign({ id:d.id }, d.data())); });
+    allReferrals = allReferrals.filter(r => r.senderHospital === email || r.receiverHospital === email);
+    renderTable();
+  }, function(err){ toast('โหลดข้อมูลไม่สำเร็จ: ' + err.message, 'error'); });
+}
+
+function switchTab(tabName){
+  currentTab = tabName;
+  document.querySelectorAll('.nav-item').forEach(function(b){
+    const on = b.dataset.tab === tabName;
+    b.className = 'nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition ' +
+      (on ? 'bg-brand-500/15 text-brand-300 ring-1 ring-brand-500/30' : 'hover:bg-white/5 text-slate-400');
+  });
+  $('page-title').textContent = tabName === 'inbox' ? 'ผู้ป่วยเข้า' : 'ผู้ป่วยออก';
+  $('col-hospital-type').textContent = tabName === 'inbox' ? 'รพ.ต้นทาง' : 'รพ.ปลายทาง';
+  renderTable();
+}
+$('tab-inbox').onclick  = function(){ switchTab('inbox');  closeSidebar(); };
+$('tab-outbox').onclick = function(){ switchTab('outbox'); closeSidebar(); };
+
+$('btn-clear').onclick = function(){
+  $('filter-keyword').value=''; $('filter-keyword-mobile').value='';
+  $('filter-start').value='';   $('filter-end').value='';
+  renderTable();
+};
+
+function getFiltered(){
+  const me = (auth.currentUser && auth.currentUser.email) || '';
+  const kw = ($('filter-keyword').value || $('filter-keyword-mobile').value || '').trim().toLowerCase();
+  const s  = $('filter-start').value ? new Date($('filter-start').value + 'T00:00:00') : null;
+  const e  = $('filter-end').value   ? new Date($('filter-end').value   + 'T23:59:59') : null;
+
+  return allReferrals.filter(function(r){
+    const tabOk = currentTab === 'inbox' ? r.receiverHospital === me : r.senderHospital === me;
+    if (!tabOk) return false;
+    if (kw && (String(r.hn)+' '+String(r.patientName)).toLowerCase().indexOf(kw) === -1) return false;
+    const c = toDate(r.createdAt);
+    if (s && c && c < s) return false;
+    if (e && c && c > e) return false;
+    return true;
+  }).sort(function(a,b){
+    const va = sortKey === 'createdAt' ? ((toDate(a.createdAt)||{getTime:()=>0}).getTime()||0) : String(a[sortKey]||'');
+    const vb = sortKey === 'createdAt' ? ((toDate(b.createdAt)||{getTime:()=>0}).getTime()||0) : String(b[sortKey]||'');
+    return va > vb ? sortDir : (va < vb ? -sortDir : 0);
+  });
+}
+
+function showSkeleton(){
+  let h = '';
+  for (let i=0;i<5;i++) h += '<tr><td colspan="6" class="px-5 py-4"><div class="h-5 rounded skel"></div></td></tr>';
+  $('referral-list').innerHTML = h;
+}
+
+function renderTable(){
+  const me   = (auth.currentUser && auth.currentUser.email) || '';
+  const rows = getFiltered();
+  const mine = allReferrals.filter(r => currentTab === 'inbox' ? r.receiverHospital === me : r.senderHospital === me);
+  const today = new Date(); today.setHours(0,0,0,0);
+
+  $('stat-total').textContent   = mine.length;
+  $('stat-today').textContent   = mine.filter(r => (toDate(r.createdAt) || 0) >= today).length;
+  $('stat-soon').textContent    = mine.filter(r => expiryInfo(r).state === 'soon').length;
+  $('stat-expired').textContent = mine.filter(r => expiryInfo(r).state === 'expired').length;
+  $('badge-inbox').textContent  = allReferrals.filter(r => r.receiverHospital === me).length;
+  $('badge-outbox').textContent = allReferrals.filter(r => r.senderHospital === me).length;
+  $('record-count').textContent = rows.length + ' รายการ';
+
+  if (!rows.length){
+    const empty = '<div class="py-16 text-center">' +
+      '<div class="w-14 h-14 mx-auto rounded-2xl bg-slate-100 dark:bg-ink-700 grid place-items-center text-slate-400 mb-3">' +
+      '<svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path stroke-linecap="round" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0h-4l-1.5 2h-5L8 13H4m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5"/></svg></div>' +
+      '<p class="font-semibold text-sm">ไม่พบรายการ</p>' +
+      '<p class="text-xs text-slate-500 mt-1">ลองปรับตัวกรองหรือช่วงวันที่ใหม่</p></div>';
+    $('referral-list').innerHTML = '<tr><td colspan="6">'+empty+'</td></tr>';
+    $('referral-list-mobile').innerHTML = empty;
+    return;
+  }
+
+  $('referral-list').innerHTML = rows.map(function(r){
+    const d = toDate(r.createdAt), ex = expiryInfo(r);
+    const hosp = hospName(currentTab === 'inbox' ? r.senderHospital : r.receiverHospital);
+    return '<tr class="hover:bg-slate-50 dark:hover:bg-ink-700/40 transition">' +
+      '<td class="px-5 py-3.5"><p class="font-medium">'+fmtDate(d)+'</p><p class="text-[11px] text-slate-500">'+fmtTime(d)+' น.</p></td>' +
+      '<td class="px-5 py-3.5"><span class="font-mono text-xs font-semibold px-2 py-1 rounded-md bg-slate-100 dark:bg-ink-700">'+esc(r.hn)+'</span></td>' +
+      '<td class="px-5 py-3.5 font-medium">'+esc(r.patientName)+'</td>' +
+      '<td class="px-5 py-3.5 text-slate-600 dark:text-slate-400">'+esc(hosp)+'</td>' +
+      '<td class="px-5 py-3.5"><span class="text-[11px] font-semibold px-2 py-1 rounded-full '+ex.cls+'">'+ex.label+'</span></td>' +
+      '<td class="px-5 py-3.5"><div class="flex items-center justify-end gap-1.5">' +
+        '<button class="btn-view p-2 rounded-lg text-brand-600 hover:bg-brand-50 dark:hover:bg-brand-500/10 transition" data-id="'+r.id+'" title="ดูรายละเอียด">' +
+        '<svg class="w-[18px] h-[18px]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" d="M2.5 12S5.5 5.5 12 5.5 21.5 12 21.5 12 18.5 18.5 12 18.5 2.5 12 2.5 12z"/></svg></button>' +
+        (r.senderHospital === me ?
+        '<button class="btn-del p-2 rounded-lg text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition" data-id="'+r.id+'" title="ลบ">' +
+        '<svg class="w-[18px] h-[18px]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M10 11v6m4-6v6M4 7h16M9 7V5a1 1 0 011-1h4a1 1 0 011 1v2m-9 0l1 13a1 1 0 001 1h8a1 1 0 001-1l1-13"/></svg></button>' : '') +
+      '</div></td></tr>';
+  }).join('');
+
+  $('referral-list-mobile').innerHTML = rows.map(function(r){
+    const d = toDate(r.createdAt), ex = expiryInfo(r);
+    const hosp = hospName(currentTab === 'inbox' ? r.senderHospital : r.receiverHospital);
+    return '<div class="p-4 space-y-2">' +
+      '<div class="flex items-start justify-between gap-2"><div>' +
+      '<p class="font-semibold">'+esc(r.patientName)+'</p>' +
+      '<p class="text-[11px] text-slate-500 font-mono">HN '+esc(r.hn)+'</p></div>' +
+      '<span class="text-[10px] font-semibold px-2 py-1 rounded-full '+ex.cls+' shrink-0">'+ex.label+'</span></div>' +
+      '<p class="text-xs text-slate-500">'+esc(hosp)+' · '+fmtDate(d)+' '+fmtTime(d)+' น.</p>' +
+      '<div class="flex gap-2 pt-1">' +
+      '<button class="btn-view flex-1 py-2 rounded-lg text-xs font-semibold bg-brand-600 text-white" data-id="'+r.id+'">ดูรายละเอียด</button>' +
+      (r.senderHospital === me ? '<button class="btn-del px-3 py-2 rounded-lg text-xs font-semibold border border-rose-200 text-rose-600" data-id="'+r.id+'">ลบ</button>' : '') +
+      '</div></div>';
+  }).join('');
+}
+
+/* delegated actions */
+document.addEventListener('click', function(e){
+  const v = e.target.closest('.btn-view'), x = e.target.closest('.btn-del');
+  if (v) { const d = allReferrals.find(r => r.id === v.dataset.id); if (d) openDetailModal(d); }
+  if (x) { const d = allReferrals.find(r => r.id === x.dataset.id); if (d) deleteReferral(d); }
+});
+
+document.querySelectorAll('[data-sort]').forEach(function(th){
+  th.onclick = function(){
+    const k = th.dataset.sort;
+    sortDir = (sortKey === k) ? -sortDir : -1;
+    sortKey = k; renderTable();
+  };
+});
+
+let _t;
+function debounceRender(){ clearTimeout(_t); _t = setTimeout(renderTable, 220); }
+['filter-keyword','filter-keyword-mobile'].forEach(id => $(id).addEventListener('input', debounceRender));
+['filter-start','filter-end'].forEach(id => $(id).addEventListener('change', renderTable));
+
+document.addEventListener('keydown', function(e){
+  if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k'){ e.preventDefault(); $('filter-keyword').focus(); }
+  if (e.key === 'Escape'){ $('detail-modal').classList.add('hidden'); $('upload-modal').classList.add('hidden'); }
+});
+
+/* ═══════════ DETAIL MODAL ═══════════ */
+function openDetailModal(data){
+  $('modal-hn').textContent       = data.hn || '-';
+  $('modal-name').textContent     = data.patientName || '-';
+  $('modal-sender').textContent   = hospName(data.senderHospital);
+  $('modal-receiver').textContent = hospName(data.receiverHospital);
+  $('modal-zip-link').href        = data.zipFileUrl || '#';
+
+  const pdfBox = $('modal-pdf-viewer').parentElement;
+  if (data.pdfFileId){
+    $('modal-pdf-download').href = 'https://drive.google.com/uc?export=download&id=' + data.pdfFileId;
+    $('modal-pdf-download').classList.remove('hidden');
+    $('modal-pdf-viewer').src = 'https://drive.google.com/file/d/' + data.pdfFileId + '/preview';
+    pdfBox.classList.remove('hidden');
+  } else {
+    $('modal-pdf-download').classList.add('hidden');
+    $('modal-pdf-viewer').src = '';
+    pdfBox.classList.add('hidden');
+  }
+  $('detail-modal').classList.remove('hidden');
+}
+
+function printPdfDocument(){
+  const f = $('modal-pdf-viewer');
+  try { f.contentWindow.focus(); f.contentWindow.print(); } catch (e) { window.print(); }
+}
+
+$('btn-close-detail').onclick = function(){ $('detail-modal').classList.add('hidden'); $('modal-pdf-viewer').src=''; };
+$('detail-modal').onclick = function(e){ if (e.target.id === 'detail-modal') $('btn-close-detail').click(); };
+
+/* ═══════════ DELETE (ตรรกะเดิม) ═══════════ */
+async function deleteReferral(data) {
+    if(!confirm('ยืนยันการลบข้อมูลผู้ป่วย HN: ' + data.hn + ' ใช่หรือไม่?\n(ไฟล์ PDF และ ZIP ใน Drive จะถูกลบทิ้งด้วย)')) return;
+
+    try {
+        // 1. ลบจาก Firestore
+        await db.collection("referrals").doc(data.id).delete();
+
+        // 2. สกัด ID ของไฟล์ ZIP จาก URL
+        let zipId = null;
+        const match = data.zipFileUrl.match(/\/d\/(.+?)\//);
+        if (match) zipId = match[1];
+
+        // 3. สั่ง GAS ให้ลบไฟล์ออกจาก Drive
+        fetch(GAS_WEB_APP_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify({ action: "deleteFiles", pdfId: data.pdfFileId, zipId: zipId })
         });
-        document.getElementById('btn-logout').addEventListener('click', () => auth.signOut());
 
-        // ตรวจสอบสถานะ
-        auth.onAuthStateChanged(async user => {
-            if (user) {
-                document.getElementById('login-section').classList.add('hidden');
-                document.getElementById('dashboard-section').classList.remove('hidden');
-                await loadHospitals();
-                document.getElementById('current-hospital').innerText = getHospitalDisplayName(user.email);
-                fetchReferralsData(user.email); // ดึงข้อมูล
-            } else {
-                document.getElementById('login-section').classList.remove('hidden');
-                document.getElementById('dashboard-section').classList.add('hidden');
-                document.getElementById('btn-login').disabled = false;
-                document.getElementById('btn-login').innerText = "เข้าสู่ระบบ";
-            }
+        toast("ลบข้อมูลสำเร็จเรียบร้อย", "success");
+    } catch (error) {
+        toast("เกิดข้อผิดพลาดในการลบ: " + error.message, "error");
+    }
+}
+
+/* ═══════════ UPLOAD MODAL ═══════════ */
+function openUpload(){ $('upload-modal').classList.remove('hidden'); }
+$('btn-open-upload').onclick = function(){ openUpload(); closeSidebar(); };
+$('btn-open-upload-top').onclick = openUpload;
+$('btn-close-upload').onclick = $('btn-cancel-upload').onclick = function(){ $('upload-modal').classList.add('hidden'); };
+$('upload-modal').onclick = function(e){ if (e.target.id === 'upload-modal') $('upload-modal').classList.add('hidden'); };
+
+/* drag & drop */
+[['drop-zip','upload-zip','zip-hint','รองรับ .zip ขนาดใหญ่ (แบ่งอัปโหลดอัตโนมัติ)'],
+ ['drop-pdf','upload-pdf','pdf-hint','เลือกไฟล์ PDF ผลอ่าน']].forEach(function(cfg){
+  const zone = $(cfg[0]), input = $(cfg[1]), hint = cfg[2], def = cfg[3];
+  zone.addEventListener('dragover', function(e){ e.preventDefault(); zone.classList.add('border-brand-500'); });
+  zone.addEventListener('dragleave', function(){ zone.classList.remove('border-brand-500'); });
+  zone.addEventListener('drop', function(e){
+    e.preventDefault(); zone.classList.remove('border-brand-500');
+    input.files = e.dataTransfer.files;
+    input.dispatchEvent(new Event('change'));
+  });
+  input.addEventListener('change', function(){
+    const f = input.files[0];
+    $(hint).textContent = f ? (f.name + ' · ' + fmtSize(f.size)) : def;
+    $(hint).className   = f ? 'text-[11px] font-semibold text-brand-600' : 'text-[11px] text-slate-500';
+  });
+});
+
+/* ═══════════ ฟังก์ชันอัปโหลดเดิม ═══════════ */
+function getBase64(fileBlob) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(fileBlob);
+        reader.onload = () => resolve(reader.result.split(',')[1]);
+        reader.onerror = error => reject(error);
+    });
+}
+
+async function uploadLargeFileToDrive(file, expireDateStr, progressTextPrefix) {
+    const chunkSize = 2 * 1024 * 1024;
+    let start = 0;
+    document.getElementById('upload-progress-text').innerText = `${progressTextPrefix} กำลังเตรียมพื้นที่เชื่อมต่อ...`;
+
+    const initRes = await fetch(GAS_WEB_APP_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ action: "initUpload", fileName: file.name, mimeType: file.type || "application/octet-stream", expireDate: expireDateStr })
+    });
+    const initData = await initRes.json();
+    if (initData.status !== "success") throw new Error("สร้างลิงก์ไม่สำเร็จ");
+    const uploadUrl = initData.uploadUrl;
+
+    while (start < file.size) {
+        let end = start + chunkSize - 1;
+        if (end >= file.size) end = file.size - 1;
+        const chunk = file.slice(start, end + 1);
+        const base64Chunk = await getBase64(chunk);
+        const chunkRes = await fetch(GAS_WEB_APP_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify({ action: "uploadChunk", uploadUrl: uploadUrl, base64Data: base64Chunk, start: start, end: end, totalSize: file.size })
+        });
+        const chunkData = await chunkRes.json();
+        const percent = Math.round(((end + 1) / file.size) * 100);
+        document.getElementById('upload-progress-bar').style.width = percent + '%';
+        document.getElementById('upload-progress-text').innerText = `${progressTextPrefix} ${file.name} (${percent}%)`;
+        if (chunkData.status === "success") return { fileId: chunkData.fileId, fileUrl: `https://drive.google.com/file/d/${chunkData.fileId}/view` };
+        else if (chunkData.status === "error") throw new Error(chunkData.message);
+        start = end + 1;
+    }
+}
+
+/* ═══════════ SUBMIT (ลำดับเดิม PDF → ZIP) ═══════════ */
+document.getElementById('upload-form').addEventListener('submit', async function(event) {
+    event.preventDefault();
+    const btnSubmit = document.getElementById('btn-submit');
+    btnSubmit.disabled = true;
+    document.getElementById('upload-progress-container').classList.remove('hidden');
+
+    try {
+        const expireDays = parseInt(document.getElementById('upload-expire').value);
+        const expireDate = new Date();
+        expireDate.setDate(expireDate.getDate() + expireDays);
+
+        const pdfFile = document.getElementById('upload-pdf').files[0];
+        const zipFile = document.getElementById('upload-zip').files[0];
+
+        document.getElementById('upload-progress-bar').style.width = '0%';
+        const pdfResult = await uploadLargeFileToDrive(pdfFile, expireDate.toISOString(), "1/2 กำลังอัปโหลดผลอ่าน:");
+
+        document.getElementById('upload-progress-bar').style.width = '0%';
+        const zipResult = await uploadLargeFileToDrive(zipFile, expireDate.toISOString(), "2/2 กำลังอัปโหลดภาพ:");
+
+        document.getElementById('upload-progress-text').innerText = "กำลังบันทึกข้อมูลเข้าสู่ระบบ...";
+        await db.collection("referrals").add({
+            hn: document.getElementById('upload-hn').value,
+            patientName: document.getElementById('upload-name').value,
+            senderHospital: auth.currentUser.email,
+            receiverHospital: document.getElementById('upload-receiver').value,
+            pdfFileId: pdfResult.fileId,
+            zipFileUrl: zipResult.fileUrl,
+            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+            expireAt: expireDate
         });
 
-        // ดึงข้อมูลแบบ Realtime เก็บลง Array
-        function fetchReferralsData(email) {
-            db.collection("referrals").orderBy("createdAt", "desc").onSnapshot(snapshot => {
-                allReferrals = [];
-                const now = new Date();
-                snapshot.forEach(doc => {
-                    const data = doc.data();
-                    data.id = doc.id; // เก็บ ID สำหรับลบ
-                    const expireDate = data.expireAt ? new Date(data.expireAt.seconds * 1000) : new Date();
-                    if (now <= expireDate && (data.receiverHospital === email || data.senderHospital === email)) {
-                        allReferrals.push(data);
-                    }
-                });
-                renderTable(); // สั่งสร้างตาราง
-            });
-        }
+        toast("ส่งต่อข้อมูลสำเร็จ!", "success");
+        document.getElementById('upload-modal').classList.add('hidden');
+        document.getElementById('upload-form').reset();
+        $('zip-hint').textContent = 'รองรับ .zip ขนาดใหญ่ (แบ่งอัปโหลดอัตโนมัติ)';
+        $('pdf-hint').textContent = 'เลือกไฟล์ PDF ผลอ่าน';
+        $('zip-hint').className = 'text-[11px] text-slate-500';
+        $('pdf-hint').className = 'text-[11px] text-slate-500';
+    } catch (error) {
+        toast("เกิดข้อผิดพลาด: " + error.message, "error");
+    } finally {
+        btnSubmit.disabled = false;
+        document.getElementById('upload-progress-container').classList.add('hidden');
+        document.getElementById('upload-progress-bar').style.width = '0%';
+    }
+});
 
-        // สลับ Tabs
-        function switchTab(tabName) {
-            currentTab = tabName;
-            const tabIn = document.getElementById('tab-inbox');
-            const tabOut = document.getElementById('tab-outbox');
-            document.getElementById('col-hospital-type').innerText = tabName === 'inbox' ? 'รพ.ต้นทาง (จาก)' : 'รพ.ปลายทาง (ส่งไป)';
+/* ═══════════ EXPORT CSV ═══════════ */
+$('btn-export').onclick = function(){
+  const rows = getFiltered();
+  if (!rows.length) { toast('ไม่มีข้อมูลให้ส่งออก','warn'); return; }
+  const head = ['วันที่,HN,ชื่อ-นามสกุล,รพ.ต้นทาง,รพ.ปลายทาง'];
+  const body = rows.map(function(r){
+    return [fmtDate(toDate(r.createdAt)), r.hn, r.patientName, hospName(r.senderHospital), hospName(r.receiverHospital)]
+      .map(v => '"' + String(v == null ? '' : v).replace(/"/g,'""') + '"').join(',');
+  });
+  const csv = head.concat(body).join('\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob(['\uFEFF' + csv], {type:'text/csv'}));
+  a.download = 'referrals_' + currentTab + '_' + Date.now() + '.csv';
+  a.click();
+  toast('ส่งออกไฟล์ CSV แล้ว','success');
+};
 
-            if (tabName === 'inbox') {
-                tabIn.className = "flex-1 py-3 font-bold text-cyan-700 border-b-4 border-cyan-600 bg-white";
-                tabOut.className = "flex-1 py-3 font-bold text-gray-500 hover:bg-gray-100 border-b-4 border-transparent";
-            } else {
-                tabOut.className = "flex-1 py-3 font-bold text-cyan-700 border-b-4 border-cyan-600 bg-white";
-                tabIn.className = "flex-1 py-3 font-bold text-gray-500 hover:bg-gray-100 border-b-4 border-transparent";
-            }
-            renderTable();
-        }
-
-        // ล้างช่องค้นหา
-        function clearFilters() {
-            document.getElementById('filter-keyword').value = "";
-            document.getElementById('filter-start').value = "";
-            document.getElementById('filter-end').value = "";
-            renderTable();
-        }
-
-        // ฟังก์ชันสร้างตาราง + กรองข้อมูล (Search/Filter)
-        function renderTable() {
-            const listEl = document.getElementById('referral-list');
-            listEl.innerHTML = "";
-            
-            const keyword = document.getElementById('filter-keyword').value.toLowerCase();
-            const startStr = document.getElementById('filter-start').value;
-            const endStr = document.getElementById('filter-end').value;
-            
-            const startDate = startStr ? new Date(startStr + "T00:00:00") : null;
-            const endDate = endStr ? new Date(endStr + "T23:59:59") : null;
-            const myEmail = auth.currentUser.email;
-
-            let count = 0;
-
-            allReferrals.forEach(data => {
-                // 1. กรองตาม Tab (Inbox = เราเป็นผู้รับ, Outbox = เราเป็นผู้ส่ง)
-                if (currentTab === 'inbox' && data.receiverHospital !== myEmail) return;
-                if (currentTab === 'outbox' && data.senderHospital !== myEmail) return;
-
-                // 2. กรอง Keyword (HN หรือ ชื่อ)
-                const searchStr = (data.hn + " " + data.patientName).toLowerCase();
-                if (keyword && !searchStr.includes(keyword)) return;
-
-                // 3. กรองวันที่
-                const docDate = data.createdAt ? new Date(data.createdAt.seconds * 1000) : new Date();
-                if (startDate && docDate < startDate) return;
-                if (endDate && docDate > endDate) return;
-
-                count++;
-                const dateStr = docDate.toLocaleString('th-TH');
-                const hospitalCol = currentTab === 'inbox' ? getHospitalDisplayName(data.senderHospital) : getHospitalDisplayName(data.receiverHospital);
-
-                const row = document.createElement('tr');
-                row.className = "border-b hover:bg-cyan-50 cursor-pointer";
-                row.innerHTML = `
-                    <td class="p-3">${dateStr}</td>
-                    <td class="p-3 font-semibold text-cyan-800">${data.hn}</td>
-                    <td class="p-3">${data.patientName}</td>
-                    <td class="p-3 text-gray-700">${hospitalCol}</td>
-                    <td class="p-3 text-center space-x-2">
-                        <button class="btn-view bg-blue-500 text-white px-3 py-1 rounded text-xs hover:bg-blue-600 font-bold">เปิดดู</button>
-                        <button class="btn-del bg-red-500 text-white px-3 py-1 rounded text-xs hover:bg-red-600 font-bold" title="ลบข้อมูล">ลบ</button>
-                    </td>`;
-                
-                row.querySelector('.btn-view').addEventListener('click', () => openDetailModal(data));
-                row.querySelector('.btn-del').addEventListener('click', () => deleteReferral(data));
-                listEl.appendChild(row);
-            });
-            document.getElementById('record-count').innerText = count;
-        }
-
-        // เปิด Modal
-        function openDetailModal(data) {
-            document.getElementById('modal-hn').innerText = data.hn;
-            document.getElementById('modal-name').innerText = data.patientName;
-            document.getElementById('modal-sender').innerText = getHospitalDisplayName(data.senderHospital);
-            document.getElementById('modal-receiver').innerText = getHospitalDisplayName(data.receiverHospital);
-            
-            document.getElementById('modal-zip-link').href = data.zipFileUrl;
-            document.getElementById('modal-pdf-viewer').src = `https://drive.google.com/file/d/${data.pdfFileId}/preview`;
-            document.getElementById('modal-pdf-download').href = `https://drive.google.com/uc?export=download&id=${data.pdfFileId}`;
-            
-            document.getElementById('detail-modal').classList.remove('hidden');
-        }
-
-        function printPdfDocument() {
-            const iframe = document.getElementById('modal-pdf-viewer');
-            if (iframe) {
-                try { iframe.contentWindow.focus(); iframe.contentWindow.print(); } 
-                catch (e) {
-                    const printWin = window.open(iframe.src, '_blank');
-                    if (printWin) { printWin.onload = function() { printWin.focus(); printWin.print(); }; }
-                }
-            }
-        }
-
-        // ==========================================
-        // ฟังก์ชันลบข้อมูล Manual (ลบฐานข้อมูล + ลบไฟล์ใน Drive)
-        // ==========================================
-        async function deleteReferral(data) {
-            if(!confirm(`ยืนยันการลบข้อมูลผู้ป่วย HN: ${data.hn} ใช่หรือไม่?\n(ไฟล์ PDF และ ZIP ใน Drive จะถูกลบทิ้งด้วย)`)) return;
-            
-            try {
-                // 1. ลบจาก Firestore
-                await db.collection("referrals").doc(data.id).delete();
-
-                // 2. สกัด ID ของไฟล์ ZIP จาก URL
-                let zipId = null;
-                const match = data.zipFileUrl.match(/\/d\/(.+?)\//);
-                if (match) zipId = match[1];
-
-                // 3. สั่ง GAS ให้ลบไฟล์ออกจาก Drive (ต้องอัปเดต GAS ด้วย)
-                fetch(GAS_WEB_APP_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                    body: JSON.stringify({ action: "deleteFiles", pdfId: data.pdfFileId, zipId: zipId })
-                });
-
-                alert("ลบข้อมูลสำเร็จเรียบร้อย");
-            } catch (error) {
-                alert("เกิดข้อผิดพลาดในการลบ: " + error.message);
-            }
-        }
-
-        // ==========================================
-        // ระบบหั่นไฟล์ (Chunked Upload) ของเดิม
-        // ==========================================
-        function getBase64(fileBlob) {
-            return new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.readAsDataURL(fileBlob);
-                reader.onload = () => resolve(reader.result.split(',')[1]);
-                reader.onerror = error => reject(error);
-            });
-        }
-
-        async function uploadLargeFileToDrive(file, expireDateStr, progressTextPrefix) {
-            const chunkSize = 2 * 1024 * 1024; 
-            let start = 0;
-            document.getElementById('upload-progress-text').innerText = `${progressTextPrefix} กำลังเตรียมพื้นที่เชื่อมต่อ...`;
-
-            const initRes = await fetch(GAS_WEB_APP_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'text/plain;charset=utf-8' }, 
-                body: JSON.stringify({ action: "initUpload", fileName: file.name, mimeType: file.type || "application/octet-stream", expireDate: expireDateStr })
-            });
-            const initData = await initRes.json();
-            if (initData.status !== "success") throw new Error("สร้างลิงก์ไม่สำเร็จ");
-            const uploadUrl = initData.uploadUrl;
-
-            while (start < file.size) {
-                let end = start + chunkSize - 1;
-                if (end >= file.size) end = file.size - 1;
-                const chunk = file.slice(start, end + 1);
-                const base64Chunk = await getBase64(chunk);
-                const chunkRes = await fetch(GAS_WEB_APP_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                    body: JSON.stringify({ action: "uploadChunk", uploadUrl: uploadUrl, base64Data: base64Chunk, start: start, end: end, totalSize: file.size })
-                });
-                const chunkData = await chunkRes.json();
-                const percent = Math.round(((end + 1) / file.size) * 100);
-                document.getElementById('upload-progress-bar').style.width = percent + '%';
-                document.getElementById('upload-progress-text').innerText = `${progressTextPrefix} ${file.name} (${percent}%)`;
-                if (chunkData.status === "success") return { fileId: chunkData.fileId, fileUrl: `https://drive.google.com/file/d/${chunkData.fileId}/view` };
-                else if (chunkData.status === "error") throw new Error(chunkData.message);
-                start = end + 1;
-            }
-        }
-
-        document.getElementById('upload-form').addEventListener('submit', async function(event) {
-            event.preventDefault();
-            const btnSubmit = document.getElementById('btn-submit');
-            btnSubmit.disabled = true;
-            document.getElementById('upload-progress-container').classList.remove('hidden');
-
-            try {
-                const expireDays = parseInt(document.getElementById('upload-expire').value);
-                const expireDate = new Date(); expireDate.setDate(expireDate.getDate() + expireDays);
-                
-                const pdfFile = document.getElementById('upload-pdf').files[0];
-                const zipFile = document.getElementById('upload-zip').files[0];
-
-                document.getElementById('upload-progress-bar').style.width = '0%';
-                const pdfResult = await uploadLargeFileToDrive(pdfFile, expireDate.toISOString(), "1/2 กำลังอัปโหลดผลอ่าน:");
-                
-                document.getElementById('upload-progress-bar').style.width = '0%';
-                const zipResult = await uploadLargeFileToDrive(zipFile, expireDate.toISOString(), "2/2 กำลังอัปโหลดภาพ:");
-
-                document.getElementById('upload-progress-text').innerText = "กำลังบันทึกข้อมูลเข้าสู่ระบบ...";
-                await db.collection("referrals").add({
-                    hn: document.getElementById('upload-hn').value,
-                    patientName: document.getElementById('upload-name').value,
-                    senderHospital: auth.currentUser.email,
-                    receiverHospital: document.getElementById('upload-receiver').value,
-                    pdfFileId: pdfResult.fileId,
-                    zipFileUrl: zipResult.fileUrl,
-                    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-                    expireAt: expireDate
-                });
-
-                alert("ส่งต่อข้อมูลสำเร็จ!");
-                document.getElementById('upload-modal').classList.add('hidden');
-                document.getElementById('upload-form').reset();
-            } catch (error) { alert("เกิดข้อผิดพลาด: " + error.message); } 
-            finally {
-                btnSubmit.disabled = false;
-                document.getElementById('upload-progress-container').classList.add('hidden');
-                document.getElementById('upload-progress-bar').style.width = '0%';
-            }
-        });
-    </script>
+/* ═══════════ SIDEBAR (mobile) ═══════════ */
+function closeSidebar(){
+  $('sidebar').classList.add('-translate-x-full');
+  $('sidebar-backdrop').classList.add('hidden');
+}
+$('btn-menu').onclick = function(){
+  $('sidebar').classList.remove('-translate-x-full');
+  $('sidebar-backdrop').classList.remove('hidden');
+};
+$('sidebar-backdrop').onclick = closeSidebar;
+</script>
 </body>
 </html>
