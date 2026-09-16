@@ -601,22 +601,24 @@ function getBase64(fileBlob) {
     });
 }
 
-// ฟังก์ชันอัปโหลดแบบทรหด (รองรับไฟล์ 300MB+ และมีระบบ Auto-Retry)
+// ฟังก์ชันอัปโหลดแบบทรหด (รองรับไฟล์ 300MB+ / มี Auto-Retry / แก้ปัญหา CORS เด็ดขาด)
 async function uploadLargeFileToDrive(file, expireDateStr, progressTextPrefix) {
-    // 1. ลดขนาดหั่นไฟล์เหลือ 1.2 MB เพื่อป้องกันไม่ให้ข้อมูลบวมเกินโควตา 5MB ของ Google
-    const chunkSize = 1.2 * 1024 * 1024; 
+    // ใช้ขนาด 2MB ปลอดภัยที่สุด ไม่ให้ข้อมูล Base64 บวมเกินโควตา 5MB ของ Google
+    const chunkSize = 2 * 1024 * 1024; 
     let start = 0;
     document.getElementById('upload-progress-text').innerText = `${progressTextPrefix} กำลังเตรียมพื้นที่เชื่อมต่อ...`;
 
-    // 2. ถอด Header ออก เพื่อให้คำสั่งเป็น Simple Request ป้องกัน CORS Preflight ตีรวน
+    // 1. ขั้นตอนสร้างลิงก์ (ใส่ Headers กลับมาเพื่อหลบ CORS Policy)
     const initRes = await fetch(GAS_WEB_APP_URL, {
         method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' }, 
         body: JSON.stringify({ action: "initUpload", fileName: file.name, mimeType: file.type || "application/octet-stream", expireDate: expireDateStr })
     });
     const initData = await initRes.json();
     if (initData.status !== "success") throw new Error("สร้างลิงก์ไม่สำเร็จ");
     const uploadUrl = initData.uploadUrl;
 
+    // 2. ขั้นตอนส่งไฟล์ทีละก้อน
     while (start < file.size) {
         let end = start + chunkSize - 1;
         if (end >= file.size) end = file.size - 1;
@@ -627,22 +629,22 @@ async function uploadLargeFileToDrive(file, expireDateStr, progressTextPrefix) {
         let retryCount = 0;
         let chunkData = null;
 
-        // 3. ระบบ Auto-Retry: หาก Google สำลักหรือเน็ตสะดุด จะพยายามยิงซ้ำสูงสุด 5 รอบ
+        // ระบบ Auto-Retry ยิงซ้ำสูงสุด 5 รอบหาก Google สะดุด
         while (!chunkSuccess && retryCount < 5) {
             try {
                 const chunkRes = await fetch(GAS_WEB_APP_URL, {
                     method: 'POST',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // ต้องใส่ทุกครั้งที่ยิงไฟล์
                     body: JSON.stringify({ action: "uploadChunk", uploadUrl: uploadUrl, base64Data: base64Chunk, start: start, end: end, totalSize: file.size })
                 });
                 
-                // ตรวจสอบข้อมูลดิบที่ Google ส่งกลับมาก่อนแปลงเป็น JSON
                 const textRes = await chunkRes.text();
                 try {
                     chunkData = JSON.parse(textRes);
                     if (chunkData.status === "error") throw new Error(chunkData.message);
-                    chunkSuccess = true; // รอดแล้ว! ผ่านไปก้อนต่อไปได้
+                    chunkSuccess = true; // ยิงสำเร็จ!
                 } catch (parseError) {
-                    throw new Error("เซิร์ฟเวอร์ Google ตอบกลับผิดปกติ (คาดว่าติด Payload Limit)"); 
+                    throw new Error("เซิร์ฟเวอร์ Google ตอบกลับผิดปกติ"); 
                 }
             } catch (err) {
                 retryCount++;
@@ -653,7 +655,7 @@ async function uploadLargeFileToDrive(file, expireDateStr, progressTextPrefix) {
                 if (retryCount >= 5) {
                     throw new Error(`ส่งข้อมูลล้มเหลวที่ ${currentPercent}% กรุณาตรวจสอบอินเทอร์เน็ตแล้วลองใหม่อีกครั้ง`);
                 }
-                // พักหายใจ 3 วินาทีก่อนยิงซ้ำ
+                // พักหายใจ 3 วินาทีก่อนยิงซ้ำ เพื่อให้ Google เคลียร์คิว
                 await new Promise(r => setTimeout(r, 3000)); 
             }
         }
