@@ -12,15 +12,14 @@
 tailwind.config = {
   darkMode: 'class',
   theme: {
-    // 🛑 ปรับสเกลขนาดตัวอักษรทั้งหมดให้ใหญ่ขึ้น 2-3 ระดับ
     fontSize: {
-      'xs': ['16px', '24px'],     // เดิม 12px
-      'sm': ['18px', '28px'],     // เดิม 14px
-      'base': ['20px', '28px'],   // เดิม 16px
-      'lg': ['24px', '32px'],     // เดิม 18px
-      'xl': ['28px', '36px'],     // เดิม 20px
-      '2xl': ['32px', '40px'],    // เดิม 24px
-      '4xl': ['48px', '1'],       // เดิม 36px
+      'xs': ['16px', '24px'],
+      'sm': ['18px', '28px'],
+      'base': ['20px', '28px'],
+      'lg': ['24px', '32px'],
+      'xl': ['28px', '36px'],
+      '2xl': ['32px', '40px'],
+      '4xl': ['48px', '1'],
     },
     extend: {
       fontFamily: { sans: ['Inter','Noto Sans Thai','sans-serif'] },
@@ -47,7 +46,7 @@ tailwind.config = {
 <body class="font-sans bg-slate-100 dark:bg-ink-900 text-slate-800 dark:text-slate-200 antialiased">
 
 <!-- ═══════════════════════════════════════════
-     LOGIN (UI แบบใหม่)
+     LOGIN 
 ═══════════════════════════════════════════ -->
 <section id="login-section" class="min-h-screen lg:grid lg:grid-cols-2">
   <div class="relative hidden lg:flex flex-col justify-between p-12 bg-gradient-to-br from-brand-800 via-brand-700 to-ink-900 text-white overflow-hidden">
@@ -67,7 +66,10 @@ tailwind.config = {
       <h1 class="text-4xl font-bold leading-tight">ส่งต่อภาพทางการแพทย์<br>อย่างปลอดภัย รวดเร็ว</h1>
       <p class="text-lg text-white/70 max-w-md leading-relaxed">ระบบรับ–ส่งไฟล์ DICOM และผลอ่านระหว่างโรงพยาบาลในเครือข่าย พร้อมการเข้ารหัสและกำหนดวันหมดอายุอัตโนมัติ</p>
     </div>
-    <p class="relative text-sm text-white/40">© 2026 Radiology Network · PDPA Compliant · Prepared by the Department of Radiology, Wichianburi Hospital</p>
+    <div class="relative border-t border-white/20 pt-4 mt-8">
+      <p class="text-base font-semibold text-white/90">Prepared by the Department of Radiology, Wichianburi Hospital</p>
+      <p class="text-sm text-white/50">© 2026 Radiology Network · PDPA Compliant</p>
+    </div>
   </div>
 
   <div class="flex items-center justify-center p-8 sm:p-12 bg-white dark:bg-ink-800 min-h-screen lg:min-h-0">
@@ -96,12 +98,18 @@ tailwind.config = {
           เข้าสู่ระบบ
         </button>
       </form>
+      
+      <!-- เพิ่มเครดิตใต้ฟอร์ม สำหรับแสดงบนจอมือถือ/จอเล็ก -->
+      <div class="mt-12 pt-6 border-t border-slate-200 text-center lg:hidden">
+        <p class="text-sm font-semibold text-slate-600">Prepared by the Department of Radiology,<br>Wichianburi Hospital</p>
+        <p class="text-xs text-slate-400 mt-1">© 2026 Radiology Network</p>
+      </div>
     </div>
   </div>
 </section>
 
 <!-- ═══════════════════════════════════════════
-     DASHBOARD (UI แบบใหม่)
+     DASHBOARD
 ═══════════════════════════════════════════ -->
 <section id="dashboard-section" class="hidden min-h-screen">
 <div class="flex">
@@ -133,13 +141,13 @@ tailwind.config = {
       </button>
     </nav>
     <div class="p-4 border-t border-white/5 space-y-2">
-      <div class="flex items-center gap-4 px-4 py-3.5 rounded-xl bg-white/5">
-        <div class="w-12 h-12 rounded-lg bg-brand-500/20 text-brand-300 grid place-items-center text-sm font-bold shrink-0">รพ</div>
+      <!-- 🛑 แก้ไขส่วนป้ายชื่อ: ลบไอคอน รพ ออก และให้ชื่อ รพ แสดงเต็มบรรทัด -->
+      <div class="flex items-center gap-3 px-4 py-4 rounded-xl bg-white/5">
         <div class="min-w-0 flex-1">
-          <p id="current-hospital" class="text-sm font-semibold text-white truncate">-</p>
-          <p class="text-xs text-emerald-400">ออนไลน์</p>
+          <p id="current-hospital" class="text-base font-bold text-white leading-tight break-words whitespace-normal">-</p>
+          <p class="text-sm text-emerald-400 mt-1 flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-emerald-400"></span> ออนไลน์</p>
         </div>
-        <button id="btn-logout" title="ออกจากระบบ" class="text-slate-400 hover:text-rose-400 transition p-2">
+        <button id="btn-logout" title="ออกจากระบบ" class="text-slate-400 hover:text-rose-400 transition p-2 shrink-0">
           <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 8H6a2 2 0 01-2-2V6a2 2 0 012-2h7"/></svg>
         </button>
       </div>
@@ -382,7 +390,6 @@ if (loginForm) {
 const btnLogout = document.getElementById('btn-logout');
 if (btnLogout) btnLogout.addEventListener('click', () => auth.signOut());
 
-// 🛑 แก้บั๊กหน้าจอค้างเด็ดขาด
 auth.onAuthStateChanged(async user => {
     const loginSec = document.getElementById('login-section');
     const dashSec = document.getElementById('dashboard-section');
