@@ -164,13 +164,11 @@ tailwind.config = {
     </header>
 
     <div class="p-6 space-y-6">
-      <!-- Filters -->
       <div class="p-6 rounded-2xl bg-white border border-slate-200 shadow-soft">
         <div class="flex flex-col lg:flex-row lg:items-end gap-4">
           <div class="flex-1">
             <label class="block text-sm font-semibold text-slate-500 mb-2">ค้นหา</label>
-            <input type="text" id="filter-keyword" placeholder="HN หรือชื่อผู้ป่วย"
-              class="w-full px-4 py-3 text-base rounded-xl bg-slate-50 border border-slate-200 outline-none focus:border-brand-500 transition">
+            <input type="text" id="filter-keyword" placeholder="HN หรือชื่อผู้ป่วย" class="w-full px-4 py-3 text-base rounded-xl bg-slate-50 border border-slate-200 outline-none focus:border-brand-500 transition">
           </div>
           <div class="flex-1">
             <label class="block text-sm font-semibold text-slate-500 mb-2">ตั้งแต่วันที่</label>
@@ -210,7 +208,6 @@ tailwind.config = {
             <tbody id="referral-list" class="divide-y divide-slate-100"></tbody>
           </table>
         </div>
-        <!-- Mobile List -->
         <div id="referral-list-mobile" class="md:hidden divide-y divide-slate-100"></div>
       </div>
     </div>
@@ -311,7 +308,7 @@ tailwind.config = {
       <div>
         <label class="block text-sm font-semibold mb-2">1. แนบไฟล์ผลอ่าน (PDF) <span class="text-rose-500">*</span></label>
         <input type="file" id="upload-pdf" accept=".pdf" required class="w-full text-base p-3 border border-slate-200 rounded-xl mb-5">
-        <label class="block text-sm font-semibold mb-2">2. แนบไฟล์ภาพ DICOM (ZIP) <span class="text-rose-500">*</span></label>
+        <label class="block text-sm font-semibold mb-2">2. แนบไฟล์ภาพ DICOM (ZIP/RAR) <span class="text-rose-500">*</span></label>
         <input type="file" id="upload-zip" accept=".zip,.rar" required class="w-full text-base p-3 border border-slate-200 rounded-xl">
       </div>
       <div id="upload-progress-container" class="hidden p-5 rounded-xl bg-brand-50 border border-brand-200">
@@ -334,6 +331,8 @@ tailwind.config = {
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<!-- เรียกใช้ Firebase Storage -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
 
 <script>
 const firebaseConfig = {
@@ -350,6 +349,7 @@ const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyVbrZpH2N8zZBV
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
+const storage = firebase.storage(); // ประกาศใช้งาน Storage
 
 let hospitalMap = {};
 let allReferrals = []; 
@@ -391,7 +391,6 @@ if (btnLogout) btnLogout.addEventListener('click', () => auth.signOut());
 auth.onAuthStateChanged(async user => {
     const loginSec = document.getElementById('login-section');
     const dashSec = document.getElementById('dashboard-section');
-    
     if (user) {
         loginSec.style.display = 'none';
         dashSec.classList.remove('hidden');
@@ -507,8 +506,6 @@ function renderTable() {
         
         row.querySelector('.btn-view').addEventListener('click', () => openDetailModal(data));
         row.querySelector('.btn-del').addEventListener('click', () => deleteReferral(data));
-        
-        // เปิดใช้งานปุ่มลบได้ทั้งกล่องเข้าและกล่องออกแล้ว!
         listEl.appendChild(row);
 
         if (listMobileEl) {
@@ -546,8 +543,16 @@ function openDetailModal(data) {
     document.getElementById('modal-receiver').innerText = getHospitalDisplayName(data.receiverHospital);
     
     document.getElementById('modal-zip-link').href = data.zipFileUrl;
-    document.getElementById('modal-pdf-viewer').src = `https://drive.google.com/file/d/${data.pdfFileId}/preview`;
-    document.getElementById('modal-pdf-download').href = `https://drive.google.com/uc?export=download&id=${data.pdfFileId}`;
+    
+    // ตรวจสอบว่าเก็บที่ไหน แล้วเปิดไฟล์ให้ถูกต้อง
+    if (data.pdfFileUrl && data.pdfFileUrl.includes('firebasestorage')) {
+        document.getElementById('modal-pdf-viewer').src = data.pdfFileUrl;
+        document.getElementById('modal-pdf-download').href = data.pdfFileUrl;
+    } else {
+        const driveId = data.pdfFileId || (data.pdfFileUrl ? data.pdfFileUrl.match(/\/d\/(.+?)\//)[1] : '');
+        document.getElementById('modal-pdf-viewer').src = `https://drive.google.com/file/d/${driveId}/preview`;
+        document.getElementById('modal-pdf-download').href = `https://drive.google.com/uc?export=download&id=${driveId}`;
+    }
     
     document.getElementById('detail-modal').classList.remove('hidden');
 }
@@ -568,18 +573,39 @@ document.getElementById('btn-close-detail').addEventListener('click', () => {
     document.getElementById('modal-pdf-viewer').src = "";
 });
 
+// 🚀 ระบบลบไฟล์แบบ Hybrid (ตามไปลบให้ถูกที่)
 async function deleteReferral(data) {
-    if(!confirm(`ยืนยันการลบข้อมูลผู้ป่วย HN: ${data.hn} ใช่หรือไม่?\n\n⚠️ คำเตือน: โปรดตรวจสอบให้แน่ใจว่าท่านได้ดาวน์โหลด "ไฟล์ผลอ่าน" และ "ภาพ DICOM" เก็บไว้เรียบร้อยแล้ว\n(หากกดลบ ไฟล์ในระบบและ Google Drive จะถูกลบทิ้งถาวรและไม่สามารถกู้คืนได้)`)) return;
+    if(!confirm(`ยืนยันการลบข้อมูลผู้ป่วย HN: ${data.hn} ใช่หรือไม่?\n\n⚠️ คำเตือน: ไฟล์ผลอ่านและภาพ DICOM จะถูกลบทิ้งถาวรและไม่สามารถกู้คืนได้`)) return;
     try {
         await db.collection("referrals").doc(data.id).delete();
-        let zipId = null;
-        const match = data.zipFileUrl.match(/\/d\/(.+?)\//);
-        if (match) zipId = match[1];
-        fetch(GAS_WEB_APP_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-            body: JSON.stringify({ action: "deleteFiles", pdfId: data.pdfFileId, zipId: zipId })
-        });
+        
+        let drivePdfId = null, driveZipId = null;
+
+        // ลบ PDF
+        if (data.pdfFileUrl && data.pdfFileUrl.includes('firebasestorage')) {
+            await storage.refFromURL(data.pdfFileUrl).delete().catch(e=>console.log("PDF missing from Firebase"));
+        } else {
+            const m = (data.pdfFileUrl || "").match(/\/d\/(.+?)\//);
+            if(m) drivePdfId = m[1];
+            if(!drivePdfId && data.pdfFileId) drivePdfId = data.pdfFileId;
+        }
+
+        // ลบ ZIP
+        if (data.zipFileUrl && data.zipFileUrl.includes('firebasestorage')) {
+            await storage.refFromURL(data.zipFileUrl).delete().catch(e=>console.log("ZIP missing from Firebase"));
+        } else {
+            const m = (data.zipFileUrl || "").match(/\/d\/(.+?)\//);
+            if(m) driveZipId = m[1];
+        }
+
+        // สั่งลบจาก Drive ถ้ามี
+        if (drivePdfId || driveZipId) {
+            fetch(GAS_WEB_APP_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify({ action: "deleteFiles", pdfId: drivePdfId, zipId: driveZipId })
+            });
+        }
         alert("ลบข้อมูลสำเร็จเรียบร้อย");
     } catch (error) { alert("เกิดข้อผิดพลาดในการลบ: " + error.message); }
 }
@@ -592,6 +618,7 @@ if (btnOpenUpload) btnOpenUpload.addEventListener('click', () => document.getEle
 if (btnCloseUpload) btnCloseUpload.addEventListener('click', () => document.getElementById('upload-modal').classList.add('hidden'));
 if (btnCancelUpload) btnCancelUpload.addEventListener('click', () => document.getElementById('upload-modal').classList.add('hidden'));
 
+// --- ฟังก์ชันอัปโหลดเข้า Google Drive (GAS) ---
 function getBase64(fileBlob) {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -601,19 +628,15 @@ function getBase64(fileBlob) {
     });
 }
 
-// ฟังก์ชันอัปโหลดแบบทรหด (รองรับไฟล์ 300MB+ / ปลดล็อก Headers แก้ปัญหา CORS)
-async function uploadLargeFileToDrive(file, expireDateStr, progressTextPrefix) {
+async function uploadToGoogleDriveViaGAS(file, expireDateStr, progressTextPrefix) {
     const chunkSize = 2 * 1024 * 1024; 
     let start = 0;
-    document.getElementById('upload-progress-text').innerText = `${progressTextPrefix} กำลังเตรียมพื้นที่เชื่อมต่อ...`;
+    document.getElementById('upload-progress-text').innerText = `${progressTextPrefix} กำลังเตรียมส่งข้อมูลไปยัง Google Drive...`;
 
-    // 1. ถอด headers ออกทั้งหมด ให้เบราว์เซอร์คุยกับ Google แบบ Simple Request
-    const initRes = await fetch(GAS_WEB_APP_URL, {
-        method: 'POST',
-        body: JSON.stringify({ action: "initUpload", fileName: file.name, mimeType: file.type || "application/octet-stream", expireDate: expireDateStr })
-    });
+    // ใช้คำสั่ง fetch พื้นฐานโดยถอด Header ออกเพื่อลดปัญหา CORS เบื้องต้น
+    const initRes = await fetch(GAS_WEB_APP_URL, { method: 'POST', body: JSON.stringify({ action: "initUpload", fileName: file.name, mimeType: file.type || "application/octet-stream", expireDate: expireDateStr }) });
     const initData = await initRes.json();
-    if (initData.status !== "success") throw new Error("สร้างลิงก์ไม่สำเร็จ");
+    if (initData.status !== "success") throw new Error("เชื่อมต่อ Google Drive ไม่สำเร็จ");
     const uploadUrl = initData.uploadUrl;
 
     while (start < file.size) {
@@ -621,50 +644,56 @@ async function uploadLargeFileToDrive(file, expireDateStr, progressTextPrefix) {
         if (end >= file.size) end = file.size - 1;
         const chunk = file.slice(start, end + 1);
         const base64Chunk = await getBase64(chunk);
-
-        let chunkSuccess = false;
-        let retryCount = 0;
-        let chunkData = null;
-
+        
+        let chunkSuccess = false; let retryCount = 0; let chunkData = null;
         while (!chunkSuccess && retryCount < 5) {
             try {
-                // ถอด headers ออกเช่นเดียวกัน
-                const chunkRes = await fetch(GAS_WEB_APP_URL, {
-                    method: 'POST',
-                    body: JSON.stringify({ action: "uploadChunk", uploadUrl: uploadUrl, base64Data: base64Chunk, start: start, end: end, totalSize: file.size })
-                });
-                
+                const chunkRes = await fetch(GAS_WEB_APP_URL, { method: 'POST', body: JSON.stringify({ action: "uploadChunk", uploadUrl: uploadUrl, base64Data: base64Chunk, start: start, end: end, totalSize: file.size }) });
                 const textRes = await chunkRes.text();
-                try {
-                    chunkData = JSON.parse(textRes);
-                    if (chunkData.status === "error") throw new Error(chunkData.message);
-                    chunkSuccess = true; 
-                } catch (parseError) {
-                    throw new Error("เซิร์ฟเวอร์ Google ตอบกลับผิดปกติ"); 
-                }
+                chunkData = JSON.parse(textRes);
+                if (chunkData.status === "error") throw new Error(chunkData.message);
+                chunkSuccess = true; 
             } catch (err) {
                 retryCount++;
                 const currentPercent = Math.round((start / file.size) * 100);
-                document.getElementById('upload-progress-text').innerText = 
-                    `${progressTextPrefix} ${file.name} (${currentPercent}%) - เซิร์ฟเวอร์สะดุด ลองใหม่ครั้งที่ ${retryCount}/5...`;
-                
-                if (retryCount >= 5) {
-                    throw new Error(`ส่งข้อมูลล้มเหลวที่ ${currentPercent}% กรุณาตรวจสอบอินเทอร์เน็ตแล้วลองใหม่อีกครั้ง`);
-                }
+                document.getElementById('upload-progress-text').innerText = `${progressTextPrefix} ${file.name} (${currentPercent}%) - เน็ตเวิร์คกระตุก ลองใหม่ครั้งที่ ${retryCount}/5...`;
+                if (retryCount >= 5) throw new Error("หมดเวลาส่งข้อมูล กรุณาลองใหม่อีกครั้ง");
                 await new Promise(r => setTimeout(r, 3000)); 
             }
         }
-
         const percent = Math.round(((end + 1) / file.size) * 100);
         document.getElementById('upload-progress-bar').style.width = percent + '%';
-        document.getElementById('upload-progress-text').innerText = `${progressTextPrefix} ${file.name} (${percent}%)`;
+        document.getElementById('upload-progress-text').innerText = `${progressTextPrefix} ${file.name} (${percent}%) - กำลังอัปโหลด (โควตา Google Drive)`;
         
         if (chunkData && chunkData.status === "success" && chunkData.fileId) {
-            return { fileId: chunkData.fileId, fileUrl: `https://drive.google.com/file/d/${chunkData.fileId}/view` };
+            return `https://drive.google.com/file/d/${chunkData.fileId}/view`;
         }
         start = end + 1;
     }
 }
+
+// --- ฟังก์ชันอัปโหลดเข้า Firebase Storage (สำหรับไฟล์ใหญ่ > 100MB) ---
+function uploadToFirebaseStorage(file, folderPath, progressPrefix) {
+    return new Promise((resolve, reject) => {
+        const fileRef = storage.ref().child(`${folderPath}/${Date.now()}_${file.name}`);
+        const uploadTask = fileRef.put(file);
+
+        uploadTask.on('state_changed', 
+            (snapshot) => {
+                const progress = Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100);
+                document.getElementById('upload-progress-bar').style.width = progress + '%';
+                document.getElementById('upload-progress-text').innerText = `${progressPrefix} ${file.name} (${progress}%) - อัปโหลดความเร็วสูง (โควตา Firebase)`;
+            }, 
+            (error) => reject(error), 
+            async () => {
+                const downloadURL = await uploadTask.snapshot.ref.getDownloadURL();
+                resolve(downloadURL);
+            }
+        );
+    });
+}
+
+// --- ควบคุมเงื่อนไข Hybrid Storage เวลากดส่งข้อมูล ---
 const uploadForm = document.getElementById('upload-form');
 if (uploadForm) {
     uploadForm.addEventListener('submit', async function(event) {
@@ -679,26 +708,41 @@ if (uploadForm) {
             
             const pdfFile = document.getElementById('upload-pdf').files[0];
             const zipFile = document.getElementById('upload-zip').files[0];
-
-            document.getElementById('upload-progress-bar').style.width = '0%';
-            const pdfResult = await uploadLargeFileToDrive(pdfFile, expireDate.toISOString(), "1/2 กำลังอัปโหลดผลอ่าน:");
             
-            document.getElementById('upload-progress-bar').style.width = '0%';
-            const zipResult = await uploadLargeFileToDrive(zipFile, expireDate.toISOString(), "2/2 กำลังอัปโหลดภาพ:");
+            // 🔥 ตั้งเส้นแบ่งขนาดไฟล์ที่ 100 MB
+            const MAX_GAS_SIZE = 100 * 1024 * 1024; 
 
-            document.getElementById('upload-progress-text').innerText = "กำลังบันทึกข้อมูลเข้าสู่ระบบ...";
+            // 1. อัปโหลดผลอ่าน PDF
+            document.getElementById('upload-progress-bar').style.width = '0%';
+            let finalPdfUrl = "";
+            if (pdfFile.size <= MAX_GAS_SIZE) {
+                finalPdfUrl = await uploadToGoogleDriveViaGAS(pdfFile, expireDate.toISOString(), "1/2 ผลอ่าน:");
+            } else {
+                finalPdfUrl = await uploadToFirebaseStorage(pdfFile, 'pdfs', "1/2 ผลอ่าน:");
+            }
+            
+            // 2. อัปโหลด ZIP ภาพ DICOM
+            document.getElementById('upload-progress-bar').style.width = '0%';
+            let finalZipUrl = "";
+            if (zipFile.size <= MAX_GAS_SIZE) {
+                finalZipUrl = await uploadToGoogleDriveViaGAS(zipFile, expireDate.toISOString(), "2/2 ภาพ DICOM:");
+            } else {
+                finalZipUrl = await uploadToFirebaseStorage(zipFile, 'zips', "2/2 ภาพ DICOM:");
+            }
+
+            document.getElementById('upload-progress-text').innerText = "กำลังบันทึกข้อมูลเข้าระบบ...";
             await db.collection("referrals").add({
                 hn: document.getElementById('upload-hn').value,
                 patientName: document.getElementById('upload-name').value,
                 senderHospital: auth.currentUser.email,
                 receiverHospital: document.getElementById('upload-receiver').value,
-                pdfFileId: pdfResult.fileId,
-                zipFileUrl: zipResult.fileUrl,
+                pdfFileUrl: finalPdfUrl, 
+                zipFileUrl: finalZipUrl,
                 createdAt: firebase.firestore.FieldValue.serverTimestamp(),
                 expireAt: expireDate
             });
 
-            alert("ส่งต่อข้อมูลสำเร็จ!");
+            alert("ส่งข้อมูลผู้ป่วยสำเร็จเรียบร้อย!");
             document.getElementById('upload-modal').classList.add('hidden');
             document.getElementById('upload-form').reset();
         } catch (error) { alert("เกิดข้อผิดพลาด: " + error.message); } 
