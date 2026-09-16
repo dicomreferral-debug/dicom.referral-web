@@ -601,24 +601,21 @@ function getBase64(fileBlob) {
     });
 }
 
-// ฟังก์ชันอัปโหลดแบบทรหด (รองรับไฟล์ 300MB+ / มี Auto-Retry / แก้ปัญหา CORS เด็ดขาด)
+// ฟังก์ชันอัปโหลดแบบทรหด (รองรับไฟล์ 300MB+ / ปลดล็อก Headers แก้ปัญหา CORS)
 async function uploadLargeFileToDrive(file, expireDateStr, progressTextPrefix) {
-    // ใช้ขนาด 2MB ปลอดภัยที่สุด ไม่ให้ข้อมูล Base64 บวมเกินโควตา 5MB ของ Google
     const chunkSize = 2 * 1024 * 1024; 
     let start = 0;
     document.getElementById('upload-progress-text').innerText = `${progressTextPrefix} กำลังเตรียมพื้นที่เชื่อมต่อ...`;
 
-    // 1. ขั้นตอนสร้างลิงก์ (ใส่ Headers กลับมาเพื่อหลบ CORS Policy)
+    // 1. ถอด headers ออกทั้งหมด ให้เบราว์เซอร์คุยกับ Google แบบ Simple Request
     const initRes = await fetch(GAS_WEB_APP_URL, {
         method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' }, 
         body: JSON.stringify({ action: "initUpload", fileName: file.name, mimeType: file.type || "application/octet-stream", expireDate: expireDateStr })
     });
     const initData = await initRes.json();
     if (initData.status !== "success") throw new Error("สร้างลิงก์ไม่สำเร็จ");
     const uploadUrl = initData.uploadUrl;
 
-    // 2. ขั้นตอนส่งไฟล์ทีละก้อน
     while (start < file.size) {
         let end = start + chunkSize - 1;
         if (end >= file.size) end = file.size - 1;
@@ -629,12 +626,11 @@ async function uploadLargeFileToDrive(file, expireDateStr, progressTextPrefix) {
         let retryCount = 0;
         let chunkData = null;
 
-        // ระบบ Auto-Retry ยิงซ้ำสูงสุด 5 รอบหาก Google สะดุด
         while (!chunkSuccess && retryCount < 5) {
             try {
+                // ถอด headers ออกเช่นเดียวกัน
                 const chunkRes = await fetch(GAS_WEB_APP_URL, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // ต้องใส่ทุกครั้งที่ยิงไฟล์
                     body: JSON.stringify({ action: "uploadChunk", uploadUrl: uploadUrl, base64Data: base64Chunk, start: start, end: end, totalSize: file.size })
                 });
                 
@@ -642,7 +638,7 @@ async function uploadLargeFileToDrive(file, expireDateStr, progressTextPrefix) {
                 try {
                     chunkData = JSON.parse(textRes);
                     if (chunkData.status === "error") throw new Error(chunkData.message);
-                    chunkSuccess = true; // ยิงสำเร็จ!
+                    chunkSuccess = true; 
                 } catch (parseError) {
                     throw new Error("เซิร์ฟเวอร์ Google ตอบกลับผิดปกติ"); 
                 }
@@ -655,7 +651,6 @@ async function uploadLargeFileToDrive(file, expireDateStr, progressTextPrefix) {
                 if (retryCount >= 5) {
                     throw new Error(`ส่งข้อมูลล้มเหลวที่ ${currentPercent}% กรุณาตรวจสอบอินเทอร์เน็ตแล้วลองใหม่อีกครั้ง`);
                 }
-                // พักหายใจ 3 วินาทีก่อนยิงซ้ำ เพื่อให้ Google เคลียร์คิว
                 await new Promise(r => setTimeout(r, 3000)); 
             }
         }
@@ -670,7 +665,6 @@ async function uploadLargeFileToDrive(file, expireDateStr, progressTextPrefix) {
         start = end + 1;
     }
 }
-
 const uploadForm = document.getElementById('upload-form');
 if (uploadForm) {
     uploadForm.addEventListener('submit', async function(event) {
