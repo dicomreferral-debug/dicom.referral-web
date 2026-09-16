@@ -601,36 +601,74 @@ function getBase64(fileBlob) {
     });
 }
 
+// ฟังก์ชันอัปโหลดแบบทรหด (มีระบบ Auto-Retry แก้ปัญหาไฟล์ใหญ่ 300MB+)
 async function uploadLargeFileToDrive(file, expireDateStr, progressTextPrefix) {
-    const chunkSize = 2 * 1024 * 1024; 
+    const chunkSize = 3 * 1024 * 1024; // ขยับก้อนละ 3MB ลดจำนวนครั้งที่ยิงไป Google
     let start = 0;
     document.getElementById('upload-progress-text').innerText = `${progressTextPrefix} กำลังเตรียมพื้นที่เชื่อมต่อ...`;
 
+    // 1. ขอสร้างลิงก์เชื่อมต่อ
     const initRes = await fetch(GAS_WEB_APP_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' }, 
         body: JSON.stringify({ action: "initUpload", fileName: file.name, mimeType: file.type || "application/octet-stream", expireDate: expireDateStr })
     });
     const initData = await initRes.json();
-    if (initData.status !== "success") throw new Error("สร้างลิงก์ไม่สำเร็จ");
+    if (initData.status !== "success") throw new Error("สร้างลิงก์อัปโหลดไม่สำเร็จ");
     const uploadUrl = initData.uploadUrl;
 
+    // 2. ลูปส่งไฟล์ทีละก้อน
     while (start < file.size) {
         let end = start + chunkSize - 1;
         if (end >= file.size) end = file.size - 1;
+        
         const chunk = file.slice(start, end + 1);
         const base64Chunk = await getBase64(chunk);
-        const chunkRes = await fetch(GAS_WEB_APP_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-            body: JSON.stringify({ action: "uploadChunk", uploadUrl: uploadUrl, base64Data: base64Chunk, start: start, end: end, totalSize: file.size })
-        });
-        const chunkData = await chunkRes.json();
+
+        let chunkSuccess = false;
+        let retryCount = 0;
+        const maxRetries = 4; // ถ้าสะดุด จะพยายามยิงซ้ำสูงสุด 4 รอบ
+        let chunkData;
+
+        // ลูปย่อย: ระบบพยายามยิงซ้ำเมื่อมีปัญหา
+        while (!chunkSuccess && retryCount < maxRetries) {
+            try {
+                const chunkRes = await fetch(GAS_WEB_APP_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify({ action: "uploadChunk", uploadUrl: uploadUrl, base64Data: base64Chunk, start: start, end: end, totalSize: file.size })
+                });
+
+                // ตรวจสอบว่าเป็น JSON จริงๆ ไหม (ป้องกัน Error ขอ J อะไรสักอย่าง)
+                const textRes = await chunkRes.text(); 
+                try {
+                    chunkData = JSON.parse(textRes);
+                    if (chunkData.status === "error") throw new Error(chunkData.message);
+                    chunkSuccess = true; // รอดแล้ว! ผ่านไปก้อนต่อไปได้
+                } catch (parseErr) {
+                    throw new Error("เซิร์ฟเวอร์ Google ตอบกลับมาผิดปกติ (ไม่ใช่ JSON)");
+                }
+            } catch (err) {
+                retryCount++;
+                const currentPercent = Math.round((start / file.size) * 100);
+                document.getElementById('upload-progress-text').innerText = `${progressTextPrefix} ${file.name} (${currentPercent}%) - เน็ตสะดุด ลองใหม่ครั้งที่ ${retryCount}/4...`;
+                
+                if (retryCount >= maxRetries) {
+                    throw new Error(`อัปโหลดล้มเหลวที่ ${currentPercent}% กรุณาตรวจสอบอินเทอร์เน็ตแล้วลองใหม่`);
+                }
+                // พักหายใจ 2.5 วินาทีก่อนยิงซ้ำ
+                await new Promise(r => setTimeout(r, 2500)); 
+            }
+        }
+
         const percent = Math.round(((end + 1) / file.size) * 100);
         document.getElementById('upload-progress-bar').style.width = percent + '%';
         document.getElementById('upload-progress-text').innerText = `${progressTextPrefix} ${file.name} (${percent}%)`;
-        if (chunkData.status === "success") return { fileId: chunkData.fileId, fileUrl: `https://drive.google.com/file/d/${chunkData.fileId}/view` };
-        else if (chunkData.status === "error") throw new Error(chunkData.message);
+        
+        if (chunkData && chunkData.status === "success" && chunkData.fileId) {
+            return { fileId: chunkData.fileId, fileUrl: `https://drive.google.com/file/d/${chunkData.fileId}/view` };
+        }
+        
         start = end + 1;
     }
 }
