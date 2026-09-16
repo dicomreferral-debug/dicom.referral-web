@@ -12,31 +12,35 @@
 tailwind.config = {
   darkMode: 'class',
   theme: {
+    // 🛑 ปรับสเกลขนาดตัวอักษรทั้งหมดให้ใหญ่ขึ้น 2-3 ระดับ
+    fontSize: {
+      'xs': ['16px', '24px'],     // เดิม 12px
+      'sm': ['18px', '28px'],     // เดิม 14px
+      'base': ['20px', '28px'],   // เดิม 16px
+      'lg': ['24px', '32px'],     // เดิม 18px
+      'xl': ['28px', '36px'],     // เดิม 20px
+      '2xl': ['32px', '40px'],    // เดิม 24px
+      '4xl': ['48px', '1'],       // เดิม 36px
+    },
     extend: {
       fontFamily: { sans: ['Inter','Noto Sans Thai','sans-serif'] },
       colors: {
         brand: { 50:'#ecfeff',100:'#cffafe',200:'#a5f3fc',300:'#67e8f9',400:'#22d3ee',500:'#06b6d4',600:'#0891b2',700:'#0e7490',800:'#155e75',900:'#164e63' },
         ink:   { 900:'#0b1220',800:'#111a2e',700:'#1a2540',600:'#26334f' }
       },
-      boxShadow: { soft:'0 8px 30px -12px rgba(2,32,71,.18)', glow:'0 0 0 4px rgba(6,182,212,.12)' },
-      animation: { 'fade-up':'fadeUp .35s ease-out both', 'pop':'pop .2s ease-out both', shimmer:'shimmer 1.4s infinite' },
-      keyframes: {
-        fadeUp:{ '0%':{opacity:0,transform:'translateY(8px)'},'100%':{opacity:1,transform:'none'} },
-        pop:{ '0%':{opacity:0,transform:'scale(.96)'},'100%':{opacity:1,transform:'scale(1)'} },
-        shimmer:{ '100%':{transform:'translateX(100%)'} }
-      }
+      boxShadow: { soft:'0 8px 30px -12px rgba(2,32,71,.18)' }
     }
   }
 }
 </script>
 <style>
-  ::-webkit-scrollbar{width:10px;height:10px}
+  ::-webkit-scrollbar{width:12px;height:12px}
   ::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:99px;border:3px solid transparent;background-clip:content-box}
   .dark ::-webkit-scrollbar-thumb{background:#334155;background-clip:content-box}
   @media print{ body *{visibility:hidden} #printable-area,#printable-area *{visibility:visible}
     #printable-area{position:absolute;inset:0;width:100%} .no-print{display:none!important} }
   .grid-bg{background-image:radial-gradient(circle at 1px 1px,rgba(148,163,184,.25) 1px,transparent 0);background-size:22px 22px}
-  input[type="date"]::-webkit-calendar-picker-indicator{cursor:pointer;opacity:.6}
+  input[type="date"]::-webkit-calendar-picker-indicator{cursor:pointer;opacity:.6; width: 24px; height: 24px;}
 </style>
 </head>
 
@@ -46,63 +50,49 @@ tailwind.config = {
      LOGIN (UI แบบใหม่)
 ═══════════════════════════════════════════ -->
 <section id="login-section" class="min-h-screen lg:grid lg:grid-cols-2">
-  <!-- Brand panel -->
   <div class="relative hidden lg:flex flex-col justify-between p-12 bg-gradient-to-br from-brand-800 via-brand-700 to-ink-900 text-white overflow-hidden">
     <div class="absolute inset-0 grid-bg opacity-40"></div>
     <div class="absolute -top-24 -left-24 w-96 h-96 bg-brand-400/20 rounded-full blur-3xl"></div>
     <div class="absolute bottom-0 right-0 w-80 h-80 bg-brand-300/10 rounded-full blur-3xl"></div>
-    <div class="relative flex items-center gap-3">
-      <div class="w-11 h-11 rounded-2xl bg-white/15 backdrop-blur grid place-items-center ring-1 ring-white/25">
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 6v12a2 2 0 002 2h12a2 2 0 002-2V6M9 12l2 2 4-4"/></svg>
+    <div class="relative flex items-center gap-4">
+      <div class="w-14 h-14 rounded-2xl bg-white/15 backdrop-blur grid place-items-center ring-1 ring-white/25">
+        <svg class="w-8 h-8" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 6v12a2 2 0 002 2h12a2 2 0 002-2V6M9 12l2 2 4-4"/></svg>
       </div>
       <div>
-        <p class="font-semibold tracking-tight">DICOM Referral Hub</p>
-        <p class="text-xs text-white/60">Secure Imaging Exchange</p>
+        <p class="text-xl font-semibold tracking-tight">DICOM Referral Hub</p>
+        <p class="text-sm text-white/60">Secure Imaging Exchange</p>
       </div>
     </div>
-    <div class="relative space-y-5">
+    <div class="relative space-y-6">
       <h1 class="text-4xl font-bold leading-tight">ส่งต่อภาพทางการแพทย์<br>อย่างปลอดภัย รวดเร็ว</h1>
-      <p class="text-white/70 max-w-md leading-relaxed">ระบบรับ–ส่งไฟล์ DICOM และผลอ่านระหว่างโรงพยาบาลในเครือข่าย พร้อมการเข้ารหัสและกำหนดวันหมดอายุอัตโนมัติ</p>
-      <div class="flex gap-8 pt-2 text-sm">
-        <div><p class="text-2xl font-bold">256-bit</p><p class="text-white/60">Encryption</p></div>
-        <div><p class="text-2xl font-bold">Realtime</p><p class="text-white/60">Sync</p></div>
-        <div><p class="text-2xl font-bold">Auto</p><p class="text-white/60">Expiry</p></div>
-      </div>
+      <p class="text-lg text-white/70 max-w-md leading-relaxed">ระบบรับ–ส่งไฟล์ DICOM และผลอ่านระหว่างโรงพยาบาลในเครือข่าย พร้อมการเข้ารหัสและกำหนดวันหมดอายุอัตโนมัติ</p>
     </div>
-    <p class="relative text-xs text-white/40">© 2025 Radiology Network · PDPA Compliant</p>
+    <p class="relative text-sm text-white/40">© 2026 Radiology Network · PDPA Compliant · Prepared by the Department of Radiology, Wichianburi Hospital</p>
   </div>
 
-  <!-- Form panel -->
-  <div class="flex items-center justify-center p-6 sm:p-12 bg-white dark:bg-ink-800 min-h-screen lg:min-h-0">
-    <div class="w-full max-w-sm animate-fade-up">
-      <div class="lg:hidden flex items-center gap-3 mb-8">
-        <div class="w-10 h-10 rounded-xl bg-brand-600 grid place-items-center text-white">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M4 6h16M4 6v12a2 2 0 002 2h12a2 2 0 002-2V6"/></svg>
-        </div>
-        <span class="font-semibold">DICOM Referral Hub</span>
-      </div>
-      <h2 class="text-2xl font-bold tracking-tight">เข้าสู่ระบบ</h2>
-      <p class="text-sm text-slate-500 dark:text-slate-400 mt-1 mb-8">ใช้บัญชีอีเมลของโรงพยาบาลของคุณ</p>
+  <div class="flex items-center justify-center p-8 sm:p-12 bg-white dark:bg-ink-800 min-h-screen lg:min-h-0">
+    <div class="w-full max-w-md">
+      <h2 class="text-4xl font-bold tracking-tight mb-2">เข้าสู่ระบบ</h2>
+      <p class="text-lg text-slate-500 dark:text-slate-400 mb-10">ใช้บัญชีอีเมลของโรงพยาบาลของคุณ</p>
 
-      <form id="login-form" class="space-y-5">
+      <form id="login-form" class="space-y-6">
         <div>
-          <label class="block text-xs font-semibold mb-2 text-slate-600 dark:text-slate-300">อีเมล</label>
+          <label class="block text-sm font-semibold mb-2 text-slate-600 dark:text-slate-300">อีเมล</label>
           <div class="relative">
-            <svg class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M3 8l9 6 9-6M3 6h18v12H3z"/></svg>
+            <svg class="w-6 h-6 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M3 8l9 6 9-6M3 6h18v12H3z"/></svg>
             <input id="email" type="email" required placeholder="hospital@example.go.th"
-              class="w-full pl-10 pr-3 py-3 text-sm rounded-xl bg-slate-50 dark:bg-ink-700 border border-slate-200 outline-none focus:border-brand-500 transition">
+              class="w-full pl-12 pr-4 py-4 text-lg rounded-xl bg-slate-50 dark:bg-ink-700 border border-slate-200 outline-none focus:border-brand-500 transition">
           </div>
         </div>
         <div>
-          <label class="block text-xs font-semibold mb-2 text-slate-600 dark:text-slate-300">รหัสผ่าน</label>
+          <label class="block text-sm font-semibold mb-2 text-slate-600 dark:text-slate-300">รหัสผ่าน</label>
           <div class="relative">
-            <svg class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zM8 11V7a4 4 0 118 0v4"/></svg>
+            <svg class="w-6 h-6 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zM8 11V7a4 4 0 118 0v4"/></svg>
             <input id="password" type="password" required placeholder="••••••••"
-              class="w-full pl-10 pr-11 py-3 text-sm rounded-xl bg-slate-50 dark:bg-ink-700 border border-slate-200 outline-none focus:border-brand-500 transition">
+              class="w-full pl-12 pr-4 py-4 text-lg rounded-xl bg-slate-50 dark:bg-ink-700 border border-slate-200 outline-none focus:border-brand-500 transition">
           </div>
         </div>
-        <button id="btn-login" type="submit"
-          class="w-full py-3 rounded-xl bg-brand-600 hover:bg-brand-700 active:scale-[.99] text-white text-sm font-semibold shadow-soft transition">
+        <button id="btn-login" type="submit" class="w-full py-4 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-lg font-semibold shadow-soft transition mt-4">
           เข้าสู่ระบบ
         </button>
       </form>
@@ -116,41 +106,41 @@ tailwind.config = {
 <section id="dashboard-section" class="hidden min-h-screen">
 <div class="flex">
   <!-- Sidebar -->
-  <aside id="sidebar" class="fixed lg:sticky top-0 z-40 h-screen w-[260px] -translate-x-full lg:translate-x-0 transition-transform duration-300 bg-ink-900 text-slate-300 flex flex-col border-r border-white/5 shrink-0">
-    <div class="p-5 flex items-center gap-3 border-b border-white/5">
-      <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-brand-400 to-brand-700 grid place-items-center text-white shrink-0">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M4 6h16M4 6v12a2 2 0 002 2h12a2 2 0 002-2V6M9 12l2 2 4-4"/></svg>
+  <aside id="sidebar" class="fixed lg:sticky top-0 z-40 h-screen w-[300px] -translate-x-full lg:translate-x-0 transition-transform duration-300 bg-ink-900 text-slate-300 flex flex-col border-r border-white/5 shrink-0">
+    <div class="p-6 flex items-center gap-4 border-b border-white/5">
+      <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-brand-400 to-brand-700 grid place-items-center text-white shrink-0">
+        <svg class="w-8 h-8" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M4 6h16M4 6v12a2 2 0 002 2h12a2 2 0 002-2V6M9 12l2 2 4-4"/></svg>
       </div>
       <div class="min-w-0">
-        <p class="text-sm font-semibold text-white truncate">DICOM Hub</p>
-        <p class="text-[11px] text-slate-500">Referral System</p>
+        <p class="text-xl font-semibold text-white truncate">DICOM Hub</p>
+        <p class="text-sm text-slate-400">Referral System</p>
       </div>
     </div>
-    <nav class="p-3 space-y-1 flex-1 overflow-y-auto">
-      <p class="px-3 pt-3 pb-2 text-[10px] font-bold tracking-widest text-slate-500">รายการ</p>
-      <button id="tab-inbox" data-tab="inbox" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition bg-brand-500/15 text-brand-300 ring-1 ring-brand-500/30">
-        <svg class="w-[18px] h-[18px] shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0h-4l-1.5 2h-5L8 13H4m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5"/></svg>
+    <nav class="p-4 space-y-2 flex-1 overflow-y-auto">
+      <p class="px-4 pt-4 pb-2 text-sm font-bold tracking-widest text-slate-500">รายการ</p>
+      <button id="tab-inbox" data-tab="inbox" class="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-base font-medium transition bg-brand-500/15 text-brand-300 ring-1 ring-brand-500/30">
+        <svg class="w-6 h-6 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0h-4l-1.5 2h-5L8 13H4m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5"/></svg>
         <span class="flex-1 text-left">ผู้ป่วยเข้า</span>
       </button>
-      <button id="tab-outbox" data-tab="outbox" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition hover:bg-white/5 text-slate-400">
-        <svg class="w-[18px] h-[18px] shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 16V4m0 0L8 8m4-4l4 4M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>
+      <button id="tab-outbox" data-tab="outbox" class="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-base font-medium transition hover:bg-white/5 text-slate-400">
+        <svg class="w-6 h-6 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 16V4m0 0L8 8m4-4l4 4M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>
         <span class="flex-1 text-left">ผู้ป่วยออก</span>
       </button>
-      <p class="px-3 pt-5 pb-2 text-[10px] font-bold tracking-widest text-slate-500">การทำงาน</p>
-      <button id="btn-open-upload" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold bg-gradient-to-r from-brand-500 to-brand-600 text-white hover:from-brand-400 hover:to-brand-500 shadow-lg shadow-brand-900/40 transition">
-        <svg class="w-[18px] h-[18px]" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M12 5v14m-7-7h14"/></svg>
+      <p class="px-4 pt-6 pb-2 text-sm font-bold tracking-widest text-slate-500">การทำงาน</p>
+      <button id="btn-open-upload" class="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-base font-semibold bg-gradient-to-r from-brand-500 to-brand-600 text-white hover:from-brand-400 hover:to-brand-500 shadow-lg shadow-brand-900/40 transition">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M12 5v14m-7-7h14"/></svg>
         ส่งต่อผู้ป่วยใหม่
       </button>
     </nav>
-    <div class="p-3 border-t border-white/5 space-y-2">
-      <div class="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-white/5">
-        <div class="w-9 h-9 rounded-lg bg-brand-500/20 text-brand-300 grid place-items-center text-xs font-bold shrink-0">รพ</div>
+    <div class="p-4 border-t border-white/5 space-y-2">
+      <div class="flex items-center gap-4 px-4 py-3.5 rounded-xl bg-white/5">
+        <div class="w-12 h-12 rounded-lg bg-brand-500/20 text-brand-300 grid place-items-center text-sm font-bold shrink-0">รพ</div>
         <div class="min-w-0 flex-1">
-          <p id="current-hospital" class="text-xs font-semibold text-white truncate">-</p>
-          <p class="text-[10px] text-emerald-400">ออนไลน์</p>
+          <p id="current-hospital" class="text-sm font-semibold text-white truncate">-</p>
+          <p class="text-xs text-emerald-400">ออนไลน์</p>
         </div>
-        <button id="btn-logout" title="ออกจากระบบ" class="text-slate-400 hover:text-rose-400 transition p-1">
-          <svg class="w-[18px] h-[18px]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 8H6a2 2 0 01-2-2V6a2 2 0 012-2h7"/></svg>
+        <button id="btn-logout" title="ออกจากระบบ" class="text-slate-400 hover:text-rose-400 transition p-2">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 8H6a2 2 0 01-2-2V6a2 2 0 012-2h7"/></svg>
         </button>
       </div>
     </div>
@@ -159,57 +149,56 @@ tailwind.config = {
   <!-- Main Content -->
   <main class="flex-1 min-w-0">
     <header class="sticky top-0 z-20 bg-white/80 backdrop-blur-xl border-b border-slate-200">
-      <div class="px-4 sm:px-6 h-16 flex items-center gap-3">
+      <div class="px-6 h-20 flex items-center gap-3">
         <div>
-          <h1 id="page-title" class="text-base font-bold tracking-tight">ผู้ป่วยเข้า</h1>
-          <p class="text-[11px] text-slate-500 hidden sm:block">รายการส่งต่อภาพ DICOM ทั้งหมดของหน่วยงาน</p>
+          <h1 id="page-title" class="text-2xl font-bold tracking-tight">ผู้ป่วยเข้า</h1>
+          <p class="text-sm text-slate-500 hidden sm:block">รายการส่งต่อภาพ DICOM ทั้งหมดของหน่วยงาน</p>
         </div>
-        <div class="flex-1"></div>
       </div>
     </header>
 
-    <div class="p-4 sm:p-6 space-y-6">
+    <div class="p-6 space-y-6">
       <!-- Filters (ระบบค้นหา) -->
-      <div class="p-4 rounded-2xl bg-white border border-slate-200 shadow-soft">
-        <div class="flex flex-col lg:flex-row lg:items-end gap-3">
+      <div class="p-6 rounded-2xl bg-white border border-slate-200 shadow-soft">
+        <div class="flex flex-col lg:flex-row lg:items-end gap-4">
           <div class="flex-1">
-            <label class="block text-[11px] font-semibold text-slate-500 mb-1.5">ค้นหา</label>
+            <label class="block text-sm font-semibold text-slate-500 mb-2">ค้นหา</label>
             <input type="text" id="filter-keyword" placeholder="HN หรือชื่อผู้ป่วย"
-              class="w-full px-3 py-2.5 text-sm rounded-xl bg-slate-50 border border-slate-200 outline-none focus:border-brand-500 transition">
+              class="w-full px-4 py-3 text-base rounded-xl bg-slate-50 border border-slate-200 outline-none focus:border-brand-500 transition">
           </div>
           <div class="flex-1">
-            <label class="block text-[11px] font-semibold text-slate-500 mb-1.5">ตั้งแต่วันที่</label>
-            <input type="date" id="filter-start" class="w-full px-3 py-2.5 text-sm rounded-xl bg-slate-50 border border-slate-200 outline-none focus:border-brand-500 transition">
+            <label class="block text-sm font-semibold text-slate-500 mb-2">ตั้งแต่วันที่</label>
+            <input type="date" id="filter-start" class="w-full px-4 py-3 text-base rounded-xl bg-slate-50 border border-slate-200 outline-none focus:border-brand-500 transition">
           </div>
           <div class="flex-1">
-            <label class="block text-[11px] font-semibold text-slate-500 mb-1.5">ถึงวันที่</label>
-            <input type="date" id="filter-end" class="w-full px-3 py-2.5 text-sm rounded-xl bg-slate-50 border border-slate-200 outline-none focus:border-brand-500 transition">
+            <label class="block text-sm font-semibold text-slate-500 mb-2">ถึงวันที่</label>
+            <input type="date" id="filter-end" class="w-full px-4 py-3 text-base rounded-xl bg-slate-50 border border-slate-200 outline-none focus:border-brand-500 transition">
           </div>
           <div class="flex gap-2">
-            <button id="btn-clear" class="px-4 py-2.5 rounded-xl text-sm font-medium border border-slate-200 hover:bg-slate-50 transition">ล้างตัวกรอง</button>
+            <button id="btn-clear" class="px-6 py-3 rounded-xl text-base font-medium border border-slate-200 hover:bg-slate-50 transition">ล้างตัวกรอง</button>
           </div>
         </div>
       </div>
 
       <!-- Table -->
       <div class="rounded-2xl bg-white border border-slate-200 shadow-soft overflow-hidden">
-        <div class="px-5 py-4 flex items-center justify-between border-b border-slate-200">
-          <div class="flex items-center gap-2">
-            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-            <h3 class="text-sm font-bold">รายการส่งต่อ</h3>
+        <div class="px-6 py-5 flex items-center justify-between border-b border-slate-200">
+          <div class="flex items-center gap-3">
+            <span class="w-3 h-3 rounded-full bg-emerald-500 animate-pulse"></span>
+            <h3 class="text-lg font-bold">รายการส่งต่อ</h3>
           </div>
-          <span id="record-count" class="text-xs font-medium px-2.5 py-1 rounded-full bg-slate-100 text-slate-600">0 รายการ</span>
+          <span id="record-count" class="text-sm font-medium px-4 py-1.5 rounded-full bg-slate-100 text-slate-600">0 รายการ</span>
         </div>
 
         <div class="overflow-x-auto hidden md:block">
-          <table class="w-full text-sm">
-            <thead class="bg-slate-50 text-[11px] uppercase tracking-wider text-slate-500">
+          <table class="w-full text-base">
+            <thead class="bg-slate-50 text-sm uppercase tracking-wider text-slate-500">
               <tr>
-                <th class="px-5 py-3 text-left font-bold">วันที่ / เวลา</th>
-                <th class="px-5 py-3 text-left font-bold">HN</th>
-                <th class="px-5 py-3 text-left font-bold">ชื่อ-นามสกุล</th>
-                <th id="col-hospital-type" class="px-5 py-3 text-left font-bold">รพ.ต้นทาง</th>
-                <th class="px-5 py-3 text-right font-bold">จัดการ</th>
+                <th class="px-6 py-4 text-left font-bold">วันที่ / เวลา</th>
+                <th class="px-6 py-4 text-left font-bold">HN</th>
+                <th class="px-6 py-4 text-left font-bold">ชื่อ-นามสกุล</th>
+                <th id="col-hospital-type" class="px-6 py-4 text-left font-bold">รพ.ต้นทาง</th>
+                <th class="px-6 py-4 text-right font-bold">จัดการ</th>
               </tr>
             </thead>
             <tbody id="referral-list" class="divide-y divide-slate-100"></tbody>
@@ -224,91 +213,89 @@ tailwind.config = {
 </section>
 
 <!-- ═══════════ DETAIL MODAL ═══════════ -->
-<div id="detail-modal" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm p-0 sm:p-6 overflow-y-auto">
-  <div class="bg-white w-full sm:max-w-5xl mx-auto sm:rounded-2xl shadow-2xl min-h-full sm:min-h-0 animate-pop overflow-hidden">
-    <div class="no-print px-5 py-4 flex items-center justify-between border-b border-slate-200 sticky top-0 bg-white z-10">
-      <div class="flex items-center gap-3">
-        <div class="w-9 h-9 rounded-xl bg-brand-50 text-brand-600 grid place-items-center">
-          <svg class="w-[18px] h-[18px]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h6l6 6v11a2 2 0 01-2 2z"/></svg>
+<div id="detail-modal" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm p-0 sm:p-8 overflow-y-auto">
+  <div class="bg-white w-full sm:max-w-6xl mx-auto sm:rounded-2xl shadow-2xl min-h-full sm:min-h-0 animate-pop overflow-hidden">
+    <div class="no-print px-8 py-5 flex items-center justify-between border-b border-slate-200 sticky top-0 bg-white z-10">
+      <div class="flex items-center gap-4">
+        <div class="w-12 h-12 rounded-xl bg-brand-50 text-brand-600 grid place-items-center">
+          <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h6l6 6v11a2 2 0 01-2 2z"/></svg>
         </div>
-        <h3 class="font-bold">รายละเอียดการส่งต่อ</h3>
+        <h3 class="font-bold text-xl">รายละเอียดการส่งต่อ</h3>
       </div>
-      <div class="flex items-center gap-2">
-        <button onclick="printPdfDocument()" class="px-3 py-2 rounded-lg text-xs font-semibold border border-slate-200 hover:bg-slate-50 flex items-center gap-1.5 transition">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M6 9V3h12v6M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2M6 14h12v7H6z"/></svg>พิมพ์
+      <div class="flex items-center gap-3">
+        <button onclick="printPdfDocument()" class="px-4 py-2.5 rounded-xl text-sm font-semibold border border-slate-200 hover:bg-slate-50 flex items-center gap-2 transition">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M6 9V3h12v6M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2M6 14h12v7H6z"/></svg>พิมพ์
         </button>
-        <button id="btn-close-detail" class="w-9 h-9 rounded-lg hover:bg-slate-100 grid place-items-center transition">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M6 18L18 6M6 6l12 12"/></svg>
+        <button id="btn-close-detail" class="w-12 h-12 rounded-xl hover:bg-slate-100 grid place-items-center transition">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M6 18L18 6M6 6l12 12"/></svg>
         </button>
       </div>
     </div>
-    <div id="printable-area" class="p-5 sm:p-6 space-y-5">
-      <div class="grid sm:grid-cols-2 gap-3">
-        <div class="p-4 rounded-xl bg-slate-50 border border-slate-200">
-          <p class="text-[11px] font-semibold text-slate-500 mb-1">HN</p>
-          <p id="modal-hn" class="font-bold text-lg">-</p>
+    <div id="printable-area" class="p-8 space-y-6">
+      <div class="grid sm:grid-cols-2 gap-4">
+        <div class="p-5 rounded-xl bg-slate-50 border border-slate-200">
+          <p class="text-sm font-semibold text-slate-500 mb-1">HN</p>
+          <p id="modal-hn" class="font-bold text-2xl">-</p>
         </div>
-        <div class="p-4 rounded-xl bg-slate-50 border border-slate-200">
-          <p class="text-[11px] font-semibold text-slate-500 mb-1">ชื่อ-นามสกุล</p>
-          <p id="modal-name" class="font-bold text-lg">-</p>
+        <div class="p-5 rounded-xl bg-slate-50 border border-slate-200">
+          <p class="text-sm font-semibold text-slate-500 mb-1">ชื่อ-นามสกุล</p>
+          <p id="modal-name" class="font-bold text-2xl">-</p>
         </div>
-        <div class="p-4 rounded-xl bg-slate-50 border border-slate-200">
-          <p class="text-[11px] font-semibold text-slate-500 mb-1">โรงพยาบาลต้นทาง</p>
-          <p id="modal-sender" class="font-semibold">-</p>
+        <div class="p-5 rounded-xl bg-slate-50 border border-slate-200">
+          <p class="text-sm font-semibold text-slate-500 mb-1">โรงพยาบาลต้นทาง</p>
+          <p id="modal-sender" class="font-semibold text-xl">-</p>
         </div>
-        <div class="p-4 rounded-xl bg-slate-50 border border-slate-200">
-          <p class="text-[11px] font-semibold text-slate-500 mb-1">โรงพยาบาลปลายทาง</p>
-          <p id="modal-receiver" class="font-semibold">-</p>
+        <div class="p-5 rounded-xl bg-slate-50 border border-slate-200">
+          <p class="text-sm font-semibold text-slate-500 mb-1">โรงพยาบาลปลายทาง</p>
+          <p id="modal-receiver" class="font-semibold text-xl">-</p>
         </div>
       </div>
-      <div class="no-print flex flex-wrap gap-2">
-        <a id="modal-zip-link" href="#" target="_blank"
-          class="flex-1 min-w-[200px] px-4 py-3 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold flex items-center justify-center gap-2 transition">
+      <div class="no-print flex flex-wrap gap-3">
+        <a id="modal-zip-link" href="#" target="_blank" class="flex-1 min-w-[200px] px-6 py-4 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-base font-semibold flex items-center justify-center gap-2 transition">
           ดาวน์โหลดไฟล์ภาพ (ZIP)
         </a>
-        <a id="modal-pdf-download" href="#" target="_blank"
-          class="flex-1 min-w-[200px] px-4 py-3 rounded-xl border border-slate-200 hover:bg-slate-50 text-sm font-semibold flex items-center justify-center gap-2 transition">
+        <a id="modal-pdf-download" href="#" target="_blank" class="flex-1 min-w-[200px] px-6 py-4 rounded-xl border border-slate-200 hover:bg-slate-50 text-base font-semibold flex items-center justify-center gap-2 transition">
           ดาวน์โหลดผลอ่าน (PDF)
         </a>
       </div>
       <div class="rounded-xl overflow-hidden border border-slate-200 bg-slate-100">
-        <iframe id="modal-pdf-viewer" class="w-full h-[65vh] sm:h-[600px]" frameborder="0"></iframe>
+        <iframe id="modal-pdf-viewer" class="w-full h-[65vh] sm:h-[700px]" frameborder="0"></iframe>
       </div>
     </div>
   </div>
 </div>
 
 <!-- ═══════════ UPLOAD MODAL ═══════════ -->
-<div id="upload-modal" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm p-0 sm:p-6 overflow-y-auto">
-  <div class="bg-white w-full sm:max-w-xl mx-auto sm:rounded-2xl shadow-2xl min-h-full sm:min-h-0 animate-pop">
-    <div class="px-5 py-4 flex items-center justify-between border-b border-slate-200 sticky top-0 bg-white z-10">
+<div id="upload-modal" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm p-0 sm:p-8 overflow-y-auto">
+  <div class="bg-white w-full sm:max-w-2xl mx-auto sm:rounded-2xl shadow-2xl min-h-full sm:min-h-0 animate-pop">
+    <div class="px-8 py-5 flex items-center justify-between border-b border-slate-200 sticky top-0 bg-white z-10">
       <div>
-        <h3 class="font-bold">ส่งต่อผู้ป่วยใหม่</h3>
-        <p class="text-[11px] text-slate-500">กรอกข้อมูลและแนบไฟล์ผลอ่าน + ไฟล์ DICOM</p>
+        <h3 class="font-bold text-xl">ส่งต่อผู้ป่วยใหม่</h3>
+        <p class="text-sm text-slate-500">กรอกข้อมูลและแนบไฟล์ผลอ่าน + ไฟล์ DICOM</p>
       </div>
-      <button id="btn-close-upload" class="w-9 h-9 rounded-lg hover:bg-slate-100 grid place-items-center transition">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M6 18L18 6M6 6l12 12"/></svg>
+      <button id="btn-close-upload" class="w-12 h-12 rounded-xl hover:bg-slate-100 grid place-items-center transition">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M6 18L18 6M6 6l12 12"/></svg>
       </button>
     </div>
-    <form id="upload-form" class="p-5 sm:p-6 space-y-4">
-      <div class="grid sm:grid-cols-2 gap-4">
+    <form id="upload-form" class="p-8 space-y-5">
+      <div class="grid sm:grid-cols-2 gap-5">
         <div>
-          <label class="block text-xs font-semibold mb-1.5">HN <span class="text-rose-500">*</span></label>
-          <input id="upload-hn" type="text" required class="w-full px-3 py-2.5 text-sm rounded-xl bg-slate-50 border border-slate-200 outline-none focus:border-brand-500 transition">
+          <label class="block text-sm font-semibold mb-2">HN <span class="text-rose-500">*</span></label>
+          <input id="upload-hn" type="text" required class="w-full px-4 py-3 text-base rounded-xl bg-slate-50 border border-slate-200 outline-none focus:border-brand-500 transition">
         </div>
         <div>
-          <label class="block text-xs font-semibold mb-1.5">ชื่อ-นามสกุล <span class="text-rose-500">*</span></label>
-          <input id="upload-name" type="text" required class="w-full px-3 py-2.5 text-sm rounded-xl bg-slate-50 border border-slate-200 outline-none focus:border-brand-500 transition">
+          <label class="block text-sm font-semibold mb-2">ชื่อ-นามสกุล <span class="text-rose-500">*</span></label>
+          <input id="upload-name" type="text" required class="w-full px-4 py-3 text-base rounded-xl bg-slate-50 border border-slate-200 outline-none focus:border-brand-500 transition">
         </div>
         <div>
-          <label class="block text-xs font-semibold mb-1.5">โรงพยาบาลปลายทาง <span class="text-rose-500">*</span></label>
-          <select id="upload-receiver" required class="w-full px-3 py-2.5 text-sm rounded-xl bg-slate-50 border border-slate-200 outline-none focus:border-brand-500 transition">
+          <label class="block text-sm font-semibold mb-2">โรงพยาบาลปลายทาง <span class="text-rose-500">*</span></label>
+          <select id="upload-receiver" required class="w-full px-4 py-3 text-base rounded-xl bg-slate-50 border border-slate-200 outline-none focus:border-brand-500 transition">
             <option value="">— กำลังโหลดรายชื่อ —</option>
           </select>
         </div>
         <div>
-          <label class="block text-xs font-semibold mb-1.5">ระยะเวลาแสดงข้อมูล <span class="text-rose-500">*</span></label>
-          <select id="upload-expire" required class="w-full px-3 py-2.5 text-sm rounded-xl bg-slate-50 border border-slate-200 outline-none focus:border-brand-500 transition">
+          <label class="block text-sm font-semibold mb-2">ระยะเวลาแสดงข้อมูล <span class="text-rose-500">*</span></label>
+          <select id="upload-expire" required class="w-full px-4 py-3 text-base rounded-xl bg-slate-50 border border-slate-200 outline-none focus:border-brand-500 transition">
             <option value="7">7 วัน</option>
             <option value="15">15 วัน</option>
             <option value="30" selected>30 วัน</option>
@@ -316,20 +303,20 @@ tailwind.config = {
         </div>
       </div>
       <div>
-        <label class="block text-xs font-semibold mb-1.5">1. แนบไฟล์ผลอ่าน (PDF) <span class="text-rose-500">*</span></label>
-        <input type="file" id="upload-pdf" accept=".pdf" required class="w-full text-sm p-2 border border-slate-200 rounded-xl mb-4">
-        <label class="block text-xs font-semibold mb-1.5">2. แนบไฟล์ภาพ DICOM (ZIP) <span class="text-rose-500">*</span></label>
-        <input type="file" id="upload-zip" accept=".zip,.rar" required class="w-full text-sm p-2 border border-slate-200 rounded-xl">
+        <label class="block text-sm font-semibold mb-2">1. แนบไฟล์ผลอ่าน (PDF) <span class="text-rose-500">*</span></label>
+        <input type="file" id="upload-pdf" accept=".pdf" required class="w-full text-base p-3 border border-slate-200 rounded-xl mb-5">
+        <label class="block text-sm font-semibold mb-2">2. แนบไฟล์ภาพ DICOM (ZIP) <span class="text-rose-500">*</span></label>
+        <input type="file" id="upload-zip" accept=".zip,.rar" required class="w-full text-base p-3 border border-slate-200 rounded-xl">
       </div>
-      <div id="upload-progress-container" class="hidden p-4 rounded-xl bg-brand-50 border border-brand-200">
-        <p id="upload-progress-text" class="text-xs font-semibold text-brand-800 mb-2">กำลังเตรียมข้อมูล…</p>
-        <div class="h-2 rounded-full bg-brand-200/60 overflow-hidden">
+      <div id="upload-progress-container" class="hidden p-5 rounded-xl bg-brand-50 border border-brand-200">
+        <p id="upload-progress-text" class="text-sm font-semibold text-brand-800 mb-3">กำลังเตรียมข้อมูล…</p>
+        <div class="h-3 rounded-full bg-brand-200/60 overflow-hidden">
           <div id="upload-progress-bar" class="h-full w-0 rounded-full bg-brand-500 transition-all duration-300"></div>
         </div>
       </div>
-      <div class="flex gap-2 pt-1">
-        <button type="button" id="btn-cancel-upload" class="px-4 py-3 rounded-xl text-sm font-semibold border border-slate-200 hover:bg-slate-50 transition">ยกเลิก</button>
-        <button id="btn-submit" type="submit" class="flex-1 px-4 py-3 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold transition">
+      <div class="flex gap-3 pt-2">
+        <button type="button" id="btn-cancel-upload" class="px-6 py-4 rounded-xl text-base font-semibold border border-slate-200 hover:bg-slate-50 transition">ยกเลิก</button>
+        <button id="btn-submit" type="submit" class="flex-1 px-6 py-4 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-base font-semibold transition">
           อัปโหลดและส่งต่อ
         </button>
       </div>
@@ -337,13 +324,12 @@ tailwind.config = {
   </div>
 </div>
 
-<!-- ═══════════ FIREBASE & SCRIPT (จาก Source 2 ที่เสถียรที่สุด) ═══════════ -->
+<!-- ═══════════ FIREBASE & SCRIPT ═══════════ -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
 <script>
-// ข้อมูลการเชื่อมต่อ Firebase และ GAS (ชุดที่ทำงานได้ปกติดี)
 const firebaseConfig = {
     apiKey: "AIzaSyDQSXj3-ojPsXbs2i7udVIVPL2E-byCBQc",
     authDomain: "dicom-referral.firebaseapp.com",
@@ -382,7 +368,6 @@ async function loadHospitals() {
     } catch (error) { console.error(error); }
 }
 
-// ผูกปุ่มการทำงานต่างๆ อย่างปลอดภัย
 const loginForm = document.getElementById('login-form');
 if (loginForm) {
     loginForm.addEventListener('submit', function(e) {
@@ -397,24 +382,20 @@ if (loginForm) {
 const btnLogout = document.getElementById('btn-logout');
 if (btnLogout) btnLogout.addEventListener('click', () => auth.signOut());
 
-// ตรวจสอบสถานะ
+// 🛑 แก้บั๊กหน้าจอค้างเด็ดขาด
 auth.onAuthStateChanged(async user => {
     const loginSec = document.getElementById('login-section');
     const dashSec = document.getElementById('dashboard-section');
     
     if (user) {
-        // ล็อกอินสำเร็จ: สั่งปิดหน้าล็อกอินแบบเด็ดขาด (ทับคำสั่ง CSS เดิม)
         loginSec.style.display = 'none';
         dashSec.classList.remove('hidden');
-        
         await loadHospitals();
         document.getElementById('current-hospital').innerText = getHospitalDisplayName(user.email);
         fetchReferralsData(user.email); 
     } else {
-        // ยังไม่ล็อกอิน: แสดงหน้าล็อกอินตามปกติ
         loginSec.style.display = '';
         dashSec.classList.add('hidden');
-        
         const btnLogin = document.getElementById('btn-login');
         if (btnLogin) { btnLogin.disabled = false; btnLogin.innerText = "เข้าสู่ระบบ"; }
     }
@@ -444,11 +425,11 @@ function switchTab(tabName) {
     document.getElementById('page-title').innerText = tabName === 'inbox' ? 'ผู้ป่วยเข้า' : 'ผู้ป่วยออก';
 
     if (tabName === 'inbox') {
-        tabIn.className = "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition bg-brand-500/15 text-brand-300 ring-1 ring-brand-500/30";
-        tabOut.className = "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition hover:bg-white/5 text-slate-400";
+        tabIn.className = "w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-base font-medium transition bg-brand-500/15 text-brand-300 ring-1 ring-brand-500/30";
+        tabOut.className = "w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-base font-medium transition hover:bg-white/5 text-slate-400";
     } else {
-        tabOut.className = "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition bg-brand-500/15 text-brand-300 ring-1 ring-brand-500/30";
-        tabIn.className = "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition hover:bg-white/5 text-slate-400";
+        tabOut.className = "w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-base font-medium transition bg-brand-500/15 text-brand-300 ring-1 ring-brand-500/30";
+        tabIn.className = "w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-base font-medium transition hover:bg-white/5 text-slate-400";
     }
     renderTable();
 }
@@ -500,36 +481,34 @@ function renderTable() {
         const dateStr = docDate.toLocaleDateString('th-TH', {day:'2-digit', month:'short', year:'2-digit'}) + ' ' + docDate.toLocaleTimeString('th-TH', {hour:'2-digit', minute:'2-digit'});
         const hospitalCol = currentTab === 'inbox' ? getHospitalDisplayName(data.senderHospital) : getHospitalDisplayName(data.receiverHospital);
 
-        // Desktop Row
         const row = document.createElement('tr');
         row.className = "border-b hover:bg-slate-50 transition";
         row.innerHTML = `
-            <td class="p-3 font-medium">${dateStr}</td>
-            <td class="p-3"><span class="font-mono text-xs font-semibold px-2 py-1 rounded-md bg-slate-100">${data.hn}</span></td>
-            <td class="p-3 font-medium">${data.patientName}</td>
-            <td class="p-3 text-slate-600">${hospitalCol}</td>
-            <td class="p-3 text-right space-x-2 whitespace-nowrap">
-                <button class="btn-view bg-brand-50 text-brand-600 px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-brand-100">เปิดดู</button>
-                <button class="btn-del bg-rose-50 text-rose-600 px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-rose-100">ลบ</button>
+            <td class="px-6 py-4 font-medium">${dateStr}</td>
+            <td class="px-6 py-4"><span class="font-mono text-sm font-bold px-3 py-1.5 rounded-lg bg-slate-100">${data.hn}</span></td>
+            <td class="px-6 py-4 font-medium">${data.patientName}</td>
+            <td class="px-6 py-4 text-slate-600">${hospitalCol}</td>
+            <td class="px-6 py-4 text-right space-x-3 whitespace-nowrap">
+                <button class="btn-view bg-brand-50 text-brand-600 px-4 py-2 rounded-xl text-sm font-bold hover:bg-brand-100">เปิดดู</button>
+                <button class="btn-del bg-rose-50 text-rose-600 px-4 py-2 rounded-xl text-sm font-bold hover:bg-rose-100">ลบ</button>
             </td>`;
         
         row.querySelector('.btn-view').addEventListener('click', () => openDetailModal(data));
         row.querySelector('.btn-del').addEventListener('click', () => deleteReferral(data));
-        if (currentTab === 'inbox') row.querySelector('.btn-del').style.display = 'none'; // ซ่อนปุ่มลบถ้าเป็นผู้ป่วยเข้า
+        if (currentTab === 'inbox') row.querySelector('.btn-del').style.display = 'none';
         listEl.appendChild(row);
 
-        // Mobile Row
         if (listMobileEl) {
             const mRow = document.createElement('div');
-            mRow.className = "p-4 space-y-2 border-b";
+            mRow.className = "p-5 space-y-3 border-b";
             mRow.innerHTML = `
-                <div class="flex items-start justify-between gap-2">
-                    <div><p class="font-semibold">${data.patientName}</p><p class="text-[11px] text-slate-500 font-mono">HN ${data.hn}</p></div>
+                <div class="flex items-start justify-between gap-3">
+                    <div><p class="font-bold text-lg">${data.patientName}</p><p class="text-sm text-slate-500 font-mono mt-1">HN ${data.hn}</p></div>
                 </div>
-                <p class="text-xs text-slate-500">${hospitalCol} · ${dateStr} น.</p>
-                <div class="flex gap-2 pt-1">
-                    <button class="btn-view-m flex-1 py-2 rounded-lg text-xs font-semibold bg-brand-600 text-white">ดูรายละเอียด</button>
-                    ${currentTab === 'outbox' ? '<button class="btn-del-m px-3 py-2 rounded-lg text-xs font-semibold border border-rose-200 text-rose-600">ลบ</button>' : ''}
+                <p class="text-sm text-slate-500">${hospitalCol} · ${dateStr} น.</p>
+                <div class="flex gap-3 pt-2">
+                    <button class="btn-view-m flex-1 py-3 rounded-xl text-sm font-bold bg-brand-600 text-white">ดูรายละเอียด</button>
+                    ${currentTab === 'outbox' ? '<button class="btn-del-m px-4 py-3 rounded-xl text-sm font-bold border border-rose-200 text-rose-600">ลบ</button>' : ''}
                 </div>`;
             mRow.querySelector('.btn-view-m').addEventListener('click', () => openDetailModal(data));
             if (currentTab === 'outbox') mRow.querySelector('.btn-del-m').addEventListener('click', () => deleteReferral(data));
@@ -539,7 +518,6 @@ function renderTable() {
     document.getElementById('record-count').innerText = count + " รายการ";
 }
 
-// ฟังการพิมพ์ในช่องค้นหา
 const inputFilterKw = document.getElementById('filter-keyword');
 const inputFilterStart = document.getElementById('filter-start');
 const inputFilterEnd = document.getElementById('filter-end');
