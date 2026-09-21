@@ -255,17 +255,17 @@ tailwind.config = {
       </div>
       <div class="no-print flex flex-wrap gap-3">
         <a id="modal-zip-link" href="#" target="_blank" class="flex-1 min-w-[200px] px-6 py-4 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-base font-semibold flex items-center justify-center gap-2 transition">
-          ดาวน์โหลดไฟล์ภาพ (ZIP)
+          ดาวน์โหลดไฟล์ภาพ (DICOM)
         </a>
         <a id="modal-pdf-download" href="#" target="_blank" class="flex-1 min-w-[200px] px-6 py-4 rounded-xl border border-slate-200 hover:bg-slate-50 text-base font-semibold flex items-center justify-center gap-2 transition">
-          ดาวน์โหลดผลอ่าน (PDF)
+          ดาวน์โหลดผลอ่าน (Report)
         </a>
       </div>
       <div id="pdf-viewer-container" class="rounded-xl overflow-hidden border border-slate-200 bg-slate-100">
         <iframe id="modal-pdf-viewer" class="w-full h-[65vh] sm:h-[700px]" frameborder="0"></iframe>
       </div>
       <div id="no-pdf-message" class="hidden rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 p-12 text-center">
-         <p class="text-slate-500 text-lg font-semibold">เคสนี้ยังไม่มีการแนบไฟล์ผลอ่าน (PDF)</p>
+         <p class="text-slate-500 text-lg font-semibold">เคสนี้ยังไม่มีการแนบไฟล์ผลอ่าน (Report)</p>
       </div>
     </div>
   </div>
@@ -310,11 +310,17 @@ tailwind.config = {
           </select>
         </div>
       </div>
-      <!-- ปลดล็อก required ออก ให้เลือกแนบทีหลังได้ -->
       <div>
-        <label class="block text-sm font-semibold mb-2">1. แนบไฟล์ผลอ่าน (PDF)</label>
+        <label class="block text-sm font-semibold mb-2 flex justify-between items-end">
+            <span>1. แนบไฟล์ผลอ่าน (PDF)</span>
+            <span id="upload-pdf-size" class="text-sm text-brand-600 font-bold bg-brand-50 px-2 py-0.5 rounded"></span>
+        </label>
         <input type="file" id="upload-pdf" accept=".pdf" class="w-full text-base p-3 border border-slate-200 rounded-xl mb-5">
-        <label class="block text-sm font-semibold mb-2">2. แนบไฟล์ภาพ DICOM (ZIP/RAR)</label>
+        
+        <label class="block text-sm font-semibold mb-2 flex justify-between items-end">
+            <span>2. แนบไฟล์ภาพ DICOM (ZIP/RAR)</span>
+            <span id="upload-zip-size" class="text-sm text-brand-600 font-bold bg-brand-50 px-2 py-0.5 rounded"></span>
+        </label>
         <input type="file" id="upload-zip" accept=".zip,.rar" class="w-full text-base p-3 border border-slate-200 rounded-xl">
         <p class="text-sm text-slate-500 mt-2">* สามารถเลือกแนบอย่างใดอย่างหนึ่งก่อนได้ และเพิ่มในภายหลัง</p>
       </div>
@@ -350,11 +356,18 @@ tailwind.config = {
       <input type="hidden" id="append-doc-id">
       
       <div id="append-pdf-group" class="hidden">
-        <label class="block text-sm font-semibold mb-2 text-blue-700">แนบไฟล์ผลอ่าน (PDF) ที่ขาดหาย</label>
+        <label class="block text-sm font-semibold mb-2 text-blue-700 flex justify-between items-end">
+            <span>แนบไฟล์ผลอ่าน (PDF) ที่ขาดหาย</span>
+            <span id="append-pdf-size" class="text-sm text-blue-700 font-bold bg-blue-100 px-2 py-0.5 rounded"></span>
+        </label>
         <input type="file" id="append-pdf" accept=".pdf" class="w-full text-base p-3 border border-blue-200 bg-blue-50/50 rounded-xl">
       </div>
+      
       <div id="append-zip-group" class="hidden">
-        <label class="block text-sm font-semibold mb-2 text-purple-700">แนบไฟล์ภาพ (ZIP/RAR) ที่ขาดหาย</label>
+        <label class="block text-sm font-semibold mb-2 text-purple-700 flex justify-between items-end">
+            <span>แนบไฟล์ภาพ (ZIP/RAR) ที่ขาดหาย</span>
+            <span id="append-zip-size" class="text-sm text-purple-700 font-bold bg-purple-100 px-2 py-0.5 rounded"></span>
+        </label>
         <input type="file" id="append-zip" accept=".zip,.rar" class="w-full text-base p-3 border border-purple-200 bg-purple-50/50 rounded-xl">
       </div>
       
@@ -460,7 +473,6 @@ function fetchReferralsData(email) {
             const data = doc.data();
             data.id = doc.id; 
             const expireDate = data.expireAt ? new Date(data.expireAt.seconds * 1000) : new Date();
-            // เก็บเคสที่ยังไม่หมดอายุ
             if (now <= expireDate && (data.receiverHospital === email || data.senderHospital === email)) {
                 allReferrals.push(data);
             }
@@ -469,7 +481,6 @@ function fetchReferralsData(email) {
     });
 }
 
-// ระบบนับถอยหลัง (อัปเดตทุก 1 นาที)
 setInterval(() => {
     document.querySelectorAll('.countdown-timer').forEach(el => {
         const expireTime = parseInt(el.getAttribute('data-expire'));
@@ -546,7 +557,6 @@ function renderTable() {
         const dateStr = docDate.toLocaleDateString('th-TH', {day:'2-digit', month:'short', year:'2-digit'}) + ' ' + docDate.toLocaleTimeString('th-TH', {hour:'2-digit', minute:'2-digit'});
         const hospitalCol = currentTab === 'inbox' ? getHospitalDisplayName(data.senderHospital) : getHospitalDisplayName(data.receiverHospital);
 
-        // คำนวณป้ายหมดอายุ (แบบนับถอยหลัง)
         let expireBadge = '';
         if (diffMs <= 0) {
             expireBadge = `<span class="inline-block mt-1.5 text-sm font-bold px-2.5 py-1 rounded-md bg-rose-100 text-rose-700 border border-rose-200">หมดอายุ</span>`;
@@ -563,19 +573,17 @@ function renderTable() {
             }
         }
 
-        // สถานะไฟล์ (Badges)
+        // อัปเดตข้อความป้าย Badge ตามที่ขอ
         const hasPdf = !!data.pdfFileUrl;
         const hasZip = !!data.zipFileUrl;
         let fileBadges = `<div class="mt-1.5 flex gap-1.5">`;
-        if (hasPdf) fileBadges += `<span class="px-2 py-0.5 text-sm rounded bg-blue-100 text-blue-700 font-bold border border-blue-200">📄 PDF</span>`;
-        if (hasZip) fileBadges += `<span class="px-2 py-0.5 text-sm rounded bg-purple-100 text-purple-700 font-bold border border-purple-200">📦 ZIP</span>`;
+        if (hasPdf) fileBadges += `<span class="px-2 py-0.5 text-sm rounded bg-blue-100 text-blue-700 font-bold border border-blue-200">📄 Report</span>`;
+        if (hasZip) fileBadges += `<span class="px-2 py-0.5 text-sm rounded bg-purple-100 text-purple-700 font-bold border border-purple-200">📦 DICOM</span>`;
         if (!hasPdf && !hasZip) fileBadges += `<span class="px-2 py-0.5 text-sm rounded bg-slate-100 text-slate-500 font-bold border border-slate-200">ยังไม่มีไฟล์</span>`;
         fileBadges += `</div>`;
 
-        // สร้างปุ่มจัดการ
         let actionButtons = `<button class="btn-view bg-brand-50 text-brand-600 px-4 py-2 rounded-xl text-sm font-bold hover:bg-brand-100">เปิดดู</button>`;
         if (!hasPdf || !hasZip) {
-            // ปุ่มแนบไฟล์เพิ่ม (เฉพาะต้นทาง หรือผู้ส่ง)
             if (data.senderHospital === myEmail) {
                 actionButtons += `<button class="btn-append bg-amber-50 text-amber-600 px-4 py-2 rounded-xl text-sm font-bold hover:bg-amber-100 ml-2">แนบไฟล์เพิ่ม</button>`;
             }
@@ -717,16 +725,49 @@ async function deleteReferral(data) {
     } catch (error) { alert("เกิดข้อผิดพลาดในการลบ: " + error.message); }
 }
 
-// ════════════ MODAL ACTIONS ════════════
+// ════════════ UPLOAD HELPER & EVENT LISTENERS ════════════
+function formatFileSize(bytes) {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+
+function setupFileSizeListener(inputId, labelId) {
+    const input = document.getElementById(inputId);
+    const label = document.getElementById(labelId);
+    if(input && label) {
+        input.addEventListener('change', function() {
+            if(this.files && this.files[0]) {
+                label.innerText = 'ขนาด: ' + formatFileSize(this.files[0].size);
+            } else {
+                label.innerText = '';
+            }
+        });
+    }
+}
+
+// กำหนดการรับฟัง Event เมื่อมีการเลือกไฟล์
+setupFileSizeListener('upload-pdf', 'upload-pdf-size');
+setupFileSizeListener('upload-zip', 'upload-zip-size');
+setupFileSizeListener('append-pdf', 'append-pdf-size');
+setupFileSizeListener('append-zip', 'append-zip-size');
+
 const btnOpenUpload = document.getElementById('btn-open-upload');
-if (btnOpenUpload) btnOpenUpload.addEventListener('click', () => document.getElementById('upload-modal').classList.remove('hidden'));
+if (btnOpenUpload) {
+    btnOpenUpload.addEventListener('click', () => {
+        document.getElementById('upload-pdf-size').innerText = "";
+        document.getElementById('upload-zip-size').innerText = "";
+        document.getElementById('upload-modal').classList.remove('hidden');
+    });
+}
 document.getElementById('btn-close-upload')?.addEventListener('click', () => document.getElementById('upload-modal').classList.add('hidden'));
 document.getElementById('btn-cancel-upload')?.addEventListener('click', () => document.getElementById('upload-modal').classList.add('hidden'));
 
 document.getElementById('btn-close-append')?.addEventListener('click', () => document.getElementById('append-modal').classList.add('hidden'));
 document.getElementById('btn-cancel-append')?.addEventListener('click', () => document.getElementById('append-modal').classList.add('hidden'));
 
-// ════════════ UPLOAD HELPERS ════════════
 function getBase64(fileBlob) {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -859,6 +900,8 @@ if (uploadForm) {
 
             alert("ส่งข้อมูลสำเร็จ!");
             document.getElementById('upload-modal').classList.add('hidden');
+            document.getElementById('upload-pdf-size').innerText = "";
+            document.getElementById('upload-zip-size').innerText = "";
             document.getElementById('upload-form').reset();
         } catch (error) { alert("เกิดข้อผิดพลาด: " + error.message); } 
         finally {
@@ -881,6 +924,8 @@ function openAppendModal(data) {
     const zipGroup = document.getElementById('append-zip-group');
     document.getElementById('append-pdf').value = "";
     document.getElementById('append-zip').value = "";
+    document.getElementById('append-pdf-size').innerText = "";
+    document.getElementById('append-zip-size').innerText = "";
     
     if (!data.pdfFileUrl) pdfGroup.classList.remove('hidden'); else pdfGroup.classList.add('hidden');
     if (!data.zipFileUrl) zipGroup.classList.remove('hidden'); else zipGroup.classList.add('hidden');
@@ -932,6 +977,8 @@ if (appendForm) {
 
             alert("แนบไฟล์เพิ่มสำเร็จ!");
             document.getElementById('append-modal').classList.add('hidden');
+            document.getElementById('append-pdf-size').innerText = "";
+            document.getElementById('append-zip-size').innerText = "";
             document.getElementById('append-form').reset();
         } catch (error) { alert("เกิดข้อผิดพลาด: " + error.message); } 
         finally {
