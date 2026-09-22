@@ -8,18 +8,14 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 <script>
 tailwind.config = {
   darkMode: 'class',
   theme: {
     fontSize: {
-      'xs': ['14px', '20px'],
-      'sm': ['16px', '24px'],
-      'base': ['18px', '28px'],
-      'lg': ['22px', '30px'],
-      'xl': ['26px', '34px'],
-      '2xl': ['30px', '38px'],
-      '4xl': ['44px', '1'],
+      'xs': ['14px', '20px'], 'sm': ['16px', '24px'], 'base': ['18px', '28px'],
+      'lg': ['22px', '30px'], 'xl': ['26px', '34px'], '2xl': ['30px', '38px'], '4xl': ['44px', '1'],
     },
     extend: {
       fontFamily: { sans: ['Inter','Noto Sans Thai','sans-serif'] },
@@ -133,11 +129,19 @@ tailwind.config = {
         <svg class="w-6 h-6 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 16V4m0 0L8 8m4-4l4 4M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>
         <span class="flex-1 text-left">ผู้ป่วยออก</span>
       </button>
+      
       <p class="px-4 pt-6 pb-2 text-sm font-bold tracking-widest text-slate-500">การทำงาน</p>
       <button id="btn-open-upload" class="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-base font-semibold bg-gradient-to-r from-brand-500 to-brand-600 text-white hover:from-brand-400 hover:to-brand-500 shadow-lg shadow-brand-900/40 transition">
         <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M12 5v14m-7-7h14"/></svg>
         ส่งต่อผู้ป่วยใหม่
       </button>
+      
+      <button id="btn-import-db" class="w-full mt-2 flex items-center gap-3 px-4 py-3.5 rounded-xl text-base font-semibold border border-slate-700 text-slate-400 hover:bg-slate-800 transition">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
+        อัปเดตฐานข้อมูล (CSV)
+      </button>
+      <input type="file" id="csv-file-input" accept=".csv" class="hidden">
+      
     </nav>
     <div class="p-4 border-t border-white/5 space-y-2">
       <div class="flex items-center gap-3 px-4 py-4 rounded-xl bg-white/5">
@@ -199,7 +203,7 @@ tailwind.config = {
             <thead class="bg-slate-50 text-sm uppercase tracking-wider text-slate-500">
               <tr>
                 <th class="px-6 py-4 text-left font-bold">วันที่ / เวลา</th>
-                <th class="px-6 py-4 text-left font-bold">HN</th>
+                <th class="px-6 py-4 text-left font-bold">HN / CID</th>
                 <th class="px-6 py-4 text-left font-bold">ชื่อ-นามสกุล / ไฟล์</th>
                 <th id="col-hospital-type" class="px-6 py-4 text-left font-bold">รพ.ต้นทาง</th>
                 <th class="px-6 py-4 text-right font-bold">จัดการ</th>
@@ -235,14 +239,18 @@ tailwind.config = {
       </div>
     </div>
     <div id="printable-area" class="p-8 space-y-6 flex-1">
-      <div class="grid sm:grid-cols-2 gap-4">
+      <div class="grid sm:grid-cols-2 md:grid-cols-3 gap-4">
         <div class="p-5 rounded-xl bg-slate-50 border border-slate-200">
           <p class="text-sm font-semibold text-slate-500 mb-1">HN</p>
           <p id="modal-hn" class="font-bold text-2xl">-</p>
         </div>
-        <div class="p-5 rounded-xl bg-slate-50 border border-slate-200">
+        <div class="p-5 rounded-xl bg-slate-50 border border-slate-200 sm:col-span-2">
           <p class="text-sm font-semibold text-slate-500 mb-1">ชื่อ-นามสกุล</p>
           <p id="modal-name" class="font-bold text-2xl">-</p>
+        </div>
+        <div class="p-5 rounded-xl bg-slate-50 border border-slate-200">
+          <p class="text-sm font-semibold text-slate-500 mb-1">เลขบัตรประชาชน (CID)</p>
+          <p id="modal-cid" class="font-bold text-xl">-</p>
         </div>
         <div class="p-5 rounded-xl bg-slate-50 border border-slate-200">
           <p class="text-sm font-semibold text-slate-500 mb-1">โรงพยาบาลต้นทาง</p>
@@ -286,12 +294,19 @@ tailwind.config = {
     <form id="upload-form" class="p-8 space-y-5">
       <div class="grid sm:grid-cols-2 gap-5">
         <div>
-          <label class="block text-sm font-semibold mb-2">HN <span class="text-rose-500">*</span></label>
-          <input id="upload-hn" type="text" required class="w-full px-4 py-3 text-base rounded-xl bg-slate-50 border border-slate-200 outline-none focus:border-brand-500 transition">
+          <label class="block text-sm font-semibold mb-2 flex items-center justify-between">
+            <span>HN <span class="text-rose-500">*</span></span>
+            <span id="hn-search-status" class="text-xs font-medium text-slate-400"></span>
+          </label>
+          <input id="upload-hn" type="text" required autocomplete="off" placeholder="กรอก HN (กด Enter เพื่อค้นหา)" class="w-full px-4 py-3 text-base rounded-xl bg-slate-50 border border-slate-200 outline-none focus:border-brand-500 transition">
         </div>
         <div>
           <label class="block text-sm font-semibold mb-2">ชื่อ-นามสกุล <span class="text-rose-500">*</span></label>
-          <input id="upload-name" type="text" required class="w-full px-4 py-3 text-base rounded-xl bg-slate-50 border border-slate-200 outline-none focus:border-brand-500 transition">
+          <input id="upload-name" type="text" required placeholder="ระบบจะดึงชื่อให้อัตโนมัติ" class="w-full px-4 py-3 text-base rounded-xl bg-slate-50 border border-slate-200 outline-none focus:border-brand-500 transition">
+        </div>
+        <div>
+          <label class="block text-sm font-semibold mb-2">เลขบัตรประชาชน (CID) <span class="text-rose-500">*</span></label>
+          <input id="upload-cid" type="text" required maxlength="13" pattern="\d{13}" placeholder="ตัวเลข 13 หลักติดกัน" class="w-full px-4 py-3 text-base rounded-xl bg-slate-50 border border-slate-200 outline-none focus:border-brand-500 transition">
         </div>
         <div>
           <label class="block text-sm font-semibold mb-2">โรงพยาบาลปลายทาง <span class="text-rose-500">*</span></label>
@@ -312,13 +327,13 @@ tailwind.config = {
       </div>
       <div>
         <label class="block text-sm font-semibold mb-2 flex justify-between items-end">
-            <span>1. แนบไฟล์ผลอ่าน (PDF)</span>
+            <span>1. แนบไฟล์ผลอ่าน (Report)</span>
             <span id="upload-pdf-size" class="text-sm text-brand-600 font-bold bg-brand-50 px-2 py-0.5 rounded"></span>
         </label>
         <input type="file" id="upload-pdf" accept=".pdf" class="w-full text-base p-3 border border-slate-200 rounded-xl mb-5">
         
         <label class="block text-sm font-semibold mb-2 flex justify-between items-end">
-            <span>2. แนบไฟล์ภาพ DICOM (ZIP/RAR)</span>
+            <span>2. แนบไฟล์ภาพ (DICOM)</span>
             <span id="upload-zip-size" class="text-sm text-brand-600 font-bold bg-brand-50 px-2 py-0.5 rounded"></span>
         </label>
         <input type="file" id="upload-zip" accept=".zip,.rar" class="w-full text-base p-3 border border-slate-200 rounded-xl">
@@ -357,7 +372,7 @@ tailwind.config = {
       
       <div id="append-pdf-group" class="hidden">
         <label class="block text-sm font-semibold mb-2 text-blue-700 flex justify-between items-end">
-            <span>แนบไฟล์ผลอ่าน (PDF) ที่ขาดหาย</span>
+            <span>แนบไฟล์ผลอ่าน (Report) ที่ขาดหาย</span>
             <span id="append-pdf-size" class="text-sm text-blue-700 font-bold bg-blue-100 px-2 py-0.5 rounded"></span>
         </label>
         <input type="file" id="append-pdf" accept=".pdf" class="w-full text-base p-3 border border-blue-200 bg-blue-50/50 rounded-xl">
@@ -365,7 +380,7 @@ tailwind.config = {
       
       <div id="append-zip-group" class="hidden">
         <label class="block text-sm font-semibold mb-2 text-purple-700 flex justify-between items-end">
-            <span>แนบไฟล์ภาพ (ZIP/RAR) ที่ขาดหาย</span>
+            <span>แนบไฟล์ภาพ (DICOM) ที่ขาดหาย</span>
             <span id="append-zip-size" class="text-sm text-purple-700 font-bold bg-purple-100 px-2 py-0.5 rounded"></span>
         </label>
         <input type="file" id="append-zip" accept=".zip,.rar" class="w-full text-base p-3 border border-purple-200 bg-purple-50/50 rounded-xl">
@@ -394,6 +409,37 @@ tailwind.config = {
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
 
 <script>
+// ==========================================
+// ฟังก์ชันจัดการชื่อไฟล์ (ตั้งชื่อเป็น CID.YYYYMMDD.HHMMSS)
+// ==========================================
+function generateFileName(cid, originalFile) {
+    if (!originalFile) return "";
+    const ext = originalFile.name.substring(originalFile.name.lastIndexOf('.') + 1); // ดึงนามสกุลไฟล์ออกมา
+    const now = new Date();
+    const yyyy = now.getFullYear();
+    const mm = String(now.getMonth() + 1).padStart(2, '0');
+    const dd = String(now.getDate()).padStart(2, '0');
+    const hh = String(now.getHours()).padStart(2, '0');
+    const min = String(now.getMinutes()).padStart(2, '0');
+    const ss = String(now.getSeconds()).padStart(2, '0');
+    
+    const fallbackCid = cid ? cid : "NOCID"; // ถ้าเกิดลืมใส่ CID ให้ตั้งเป็น NOCID ไปก่อน
+    return `${fallbackCid}.${yyyy}${mm}${dd}.${hh}${min}${ss}.${ext}`;
+}
+
+// ==========================================
+// ฟังก์ชันจัดการ CID
+// ==========================================
+function getMaskedCID(cid) {
+    if (!cid || cid.length !== 13) return cid || "-";
+    return `x-xxxx-xxxx${cid.substring(9, 10)}-${cid.substring(10, 12)}-${cid.substring(12, 13)}`;
+}
+
+function getFullCID(cid) {
+    if (!cid || cid.length !== 13) return cid || "-";
+    return `${cid[0]}-${cid.substring(1, 5)}-${cid.substring(5, 10)}-${cid.substring(10, 12)}-${cid[12]}`;
+}
+
 const firebaseConfig = {
     apiKey: "AIzaSyDQSXj3-ojPsXbs2i7udVIVPL2E-byCBQc",
     authDomain: "dicom-referral.firebaseapp.com",
@@ -404,7 +450,7 @@ const firebaseConfig = {
     measurementId: "G-304XVHFND5"
 };
 const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyVbrZpH2N8zZBVaAcqLJi4LCLHeQPa7t30Y1Cnq6Pl2dUD2lXw2syhRV7R7537PYjMmQ/exec"; 
-const MAX_GAS_SIZE = 100 * 1024 * 1024; // 100 MB Limit สำหรับ Hybrid
+const MAX_GAS_SIZE = 100 * 1024 * 1024; // 100 MB Limit
 
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
@@ -415,6 +461,166 @@ let hospitalMap = {};
 let allReferrals = []; 
 let currentTab = 'inbox'; 
 
+// ==========================================
+// 1. ระบบ IndexedDB สำหรับเก็บรายชื่อผู้ป่วย (Local Cache)
+// ==========================================
+let localDb;
+const requestDb = window.indexedDB.open("PatientDB", 1);
+requestDb.onupgradeneeded = function(event) {
+    localDb = event.target.result;
+    if (!localDb.objectStoreNames.contains("patients")) {
+        localDb.createObjectStore("patients", { keyPath: "hn" });
+    }
+};
+requestDb.onsuccess = function(event) { localDb = event.target.result; };
+requestDb.onerror = function(event) { console.error("IndexedDB error:", event.target.errorCode); };
+
+const btnImportDb = document.getElementById('btn-import-db');
+const csvFileInput = document.getElementById('csv-file-input');
+if (btnImportDb && csvFileInput) {
+    btnImportDb.addEventListener('click', () => csvFileInput.click());
+    
+    csvFileInput.addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        
+        btnImportDb.innerText = "กำลังนำเข้า...";
+        btnImportDb.disabled = true;
+
+        Papa.parse(file, {
+            header: true,
+            skipEmptyLines: true,
+            complete: function(results) {
+                const transaction = localDb.transaction(["patients"], "readwrite");
+                const store = transaction.objectStore("patients");
+                store.clear();
+                let count = 0;
+                results.data.forEach(row => {
+                    const hnKey = Object.keys(row).find(key => key.toLowerCase() === 'hn');
+                    const nameKey = Object.keys(row).find(key => key.toLowerCase().includes('name'));
+                    const cidKey = Object.keys(row).find(key => key.toLowerCase() === 'cid'); 
+                    
+                    if (hnKey && nameKey && row[hnKey]) {
+                        const cVal = (cidKey && row[cidKey]) ? String(row[cidKey]).trim() : "";
+                        store.put({ hn: String(row[hnKey]).trim(), name: String(row[nameKey]).trim(), cid: cVal });
+                        count++;
+                    }
+                });
+                
+                transaction.oncomplete = function() {
+                    alert(`อัปเดตฐานข้อมูลสำเร็จ! (จำนวน ${count} รายการ)`);
+                    btnImportDb.innerHTML = `<svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg> อัปเดตล่าสุด: ${new Date().toLocaleDateString('th-TH')}`;
+                    btnImportDb.classList.replace('text-slate-400', 'text-emerald-400');
+                    btnImportDb.disabled = false;
+                };
+            }
+        });
+        this.value = ''; 
+    });
+}
+
+// ==========================================
+// 2. ระบบค้นหา 4 ลำดับชั้น (Read-Through Cache)
+// ==========================================
+const inputUploadHn = document.getElementById('upload-hn');
+const inputUploadName = document.getElementById('upload-name');
+const inputUploadCid = document.getElementById('upload-cid');
+const statusUploadHn = document.getElementById('hn-search-status');
+
+if (inputUploadHn) {
+    const searchHn = async () => {
+        const hnToSearch = inputUploadHn.value.trim();
+        if (!hnToSearch) return;
+        
+        statusUploadHn.innerText = "กำลังค้นหา...";
+        statusUploadHn.className = "text-xs font-medium text-slate-400";
+        inputUploadName.value = ""; 
+        inputUploadCid.value = "";
+        let found = false;
+
+        if (localDb && !found) {
+            try {
+                const result = await new Promise((resolve, reject) => {
+                    const transaction = localDb.transaction(["patients"], "readonly");
+                    const store = transaction.objectStore("patients");
+                    const request = store.get(hnToSearch);
+                    request.onsuccess = () => resolve(request.result);
+                    request.onerror = () => reject(request.error);
+                });
+                
+                if (result) {
+                    inputUploadName.value = result.name;
+                    inputUploadCid.value = result.cid || "";
+                    statusUploadHn.innerText = "✅ พบประวัติ (จากฐานข้อมูลในเครื่อง)";
+                    statusUploadHn.className = "text-xs font-bold text-emerald-500";
+                    found = true;
+                }
+            } catch (err) { console.log("IndexedDB search error:", err); }
+        }
+
+        if (!found) {
+            try {
+                statusUploadHn.innerText = "กำลังค้นหาคนไข้ใหม่จาก HOSxP...";
+                const formData = new FormData();
+                formData.append('hn', hnToSearch);
+
+                const response = await fetch('http://127.0.0.1:5000/search', {
+                    method: 'POST',
+                    body: formData
+                });
+                const result = await response.json();
+
+                if (result.success) {
+                    const newPatientName = result.data.name;
+                    const newCid = result.data.cid || "";
+                    inputUploadName.value = newPatientName;
+                    inputUploadCid.value = newCid;
+                    statusUploadHn.innerText = "✅ ดึงข้อมูลใหม่จาก HOSxP สำเร็จ";
+                    statusUploadHn.className = "text-xs font-bold text-blue-500";
+                    found = true;
+
+                    if (localDb) {
+                        const tx = localDb.transaction(["patients"], "readwrite");
+                        const store = tx.objectStore("patients");
+                        store.put({ hn: hnToSearch, name: newPatientName, cid: newCid });
+                    }
+                }
+            } catch (e) { console.log("Local API Not Running or CORS Blocked", e); }
+        }
+
+        if (!found) {
+            try {
+                statusUploadHn.innerText = "กำลังค้นหาจากประวัติส่งต่อเก่า...";
+                const querySnapshot = await db.collection("referrals").where("hn", "==", hnToSearch).limit(1).get();
+                if (!querySnapshot.empty) {
+                    const pData = querySnapshot.docs[0].data();
+                    inputUploadName.value = pData.patientName;
+                    inputUploadCid.value = pData.cid || "";
+                    statusUploadHn.innerText = "✅ พบประวัติ (จากระบบส่งต่อเก่า)";
+                    statusUploadHn.className = "text-xs font-bold text-amber-500";
+                    found = true;
+                }
+            } catch (e) { console.log(e); }
+        }
+
+        if (!found) {
+            statusUploadHn.innerText = "❌ ไม่พบชื่อในระบบ (กรุณาพิมพ์เอง)";
+            statusUploadHn.className = "text-xs font-bold text-rose-500";
+        }
+    };
+    
+    inputUploadHn.addEventListener('blur', searchHn);
+    inputUploadHn.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault(); 
+            searchHn();
+        }
+    });
+}
+
+// ==========================================
+// 3. ระบบหลักของเว็บ (ตาราง, อัปโหลด, เปิดไฟล์)
+// ==========================================
 function getHospitalDisplayName(email) { return hospitalMap[email] || email; }
 
 async function loadHospitals() {
@@ -543,7 +749,7 @@ function renderTable() {
         if (currentTab === 'inbox' && data.receiverHospital !== myEmail) return;
         if (currentTab === 'outbox' && data.senderHospital !== myEmail) return;
 
-        const searchStr = (data.hn + " " + data.patientName).toLowerCase();
+        const searchStr = (data.hn + " " + data.patientName + " " + (data.cid || "")).toLowerCase();
         if (keyword && !searchStr.includes(keyword)) return;
 
         const docDate = data.createdAt ? new Date(data.createdAt.seconds * 1000) : new Date();
@@ -573,7 +779,6 @@ function renderTable() {
             }
         }
 
-        // อัปเดตข้อความป้าย Badge ตามที่ขอ
         const hasPdf = !!data.pdfFileUrl;
         const hasZip = !!data.zipFileUrl;
         let fileBadges = `<div class="mt-1.5 flex gap-1.5">`;
@@ -590,11 +795,16 @@ function renderTable() {
         }
         actionButtons += `<button class="btn-del bg-rose-50 text-rose-600 px-4 py-2 rounded-xl text-sm font-bold hover:bg-rose-100 ml-2">ลบ</button>`;
 
+        const maskedCid = data.cid ? getMaskedCID(data.cid) : '-';
+
         const row = document.createElement('tr');
         row.className = "border-b hover:bg-slate-50 transition";
         row.innerHTML = `
             <td class="px-6 py-4 font-medium">${dateStr}<br>${expireBadge}</td>
-            <td class="px-6 py-4"><span class="font-mono text-sm font-bold px-3 py-1.5 rounded-lg bg-slate-100">${data.hn}</span></td>
+            <td class="px-6 py-4">
+                <span class="font-mono text-sm font-bold px-3 py-1.5 rounded-lg bg-slate-100">${data.hn}</span>
+                <div class="text-sm text-slate-500 mt-2 font-mono" title="CID">💳 ${maskedCid}</div>
+            </td>
             <td class="px-6 py-4 font-medium">${data.patientName}${fileBadges}</td>
             <td class="px-6 py-4 text-slate-600">${hospitalCol}</td>
             <td class="px-6 py-4 text-right space-x-2 whitespace-nowrap">${actionButtons}</td>`;
@@ -611,7 +821,11 @@ function renderTable() {
             mRow.className = "p-5 space-y-3 border-b";
             mRow.innerHTML = `
                 <div class="flex items-start justify-between gap-3">
-                    <div><p class="font-bold text-lg">${data.patientName}</p><p class="text-sm text-slate-500 font-mono mt-1">HN ${data.hn}</p>${fileBadges}</div>
+                    <div>
+                        <p class="font-bold text-lg">${data.patientName}</p>
+                        <p class="text-sm text-slate-500 font-mono mt-1">HN ${data.hn} | 💳 ${maskedCid}</p>
+                        ${fileBadges}
+                    </div>
                     ${expireBadge}
                 </div>
                 <p class="text-sm text-slate-500">${hospitalCol} · ${dateStr} น.</p>
@@ -637,6 +851,7 @@ document.getElementById('filter-end')?.addEventListener('change', renderTable);
 function openDetailModal(data) {
     document.getElementById('modal-hn').innerText = data.hn;
     document.getElementById('modal-name').innerText = data.patientName;
+    document.getElementById('modal-cid').innerText = data.cid ? getFullCID(data.cid) : '-'; 
     document.getElementById('modal-sender').innerText = getHospitalDisplayName(data.senderHospital);
     document.getElementById('modal-receiver').innerText = getHospitalDisplayName(data.receiverHospital);
     
@@ -725,7 +940,6 @@ async function deleteReferral(data) {
     } catch (error) { alert("เกิดข้อผิดพลาดในการลบ: " + error.message); }
 }
 
-// ════════════ UPLOAD HELPER & EVENT LISTENERS ════════════
 function formatFileSize(bytes) {
     if (bytes === 0) return '0 Bytes';
     const k = 1024;
@@ -748,7 +962,6 @@ function setupFileSizeListener(inputId, labelId) {
     }
 }
 
-// กำหนดการรับฟัง Event เมื่อมีการเลือกไฟล์
 setupFileSizeListener('upload-pdf', 'upload-pdf-size');
 setupFileSizeListener('upload-zip', 'upload-zip-size');
 setupFileSizeListener('append-pdf', 'append-pdf-size');
@@ -759,6 +972,7 @@ if (btnOpenUpload) {
     btnOpenUpload.addEventListener('click', () => {
         document.getElementById('upload-pdf-size').innerText = "";
         document.getElementById('upload-zip-size').innerText = "";
+        document.getElementById('hn-search-status').innerText = "";
         document.getElementById('upload-modal').classList.remove('hidden');
     });
 }
@@ -777,13 +991,15 @@ function getBase64(fileBlob) {
     });
 }
 
-async function uploadToGoogleDriveViaGAS(file, expireDateStr, progressTextPrefix, progressBarId, progressTextId) {
+// อัปเดตฟังก์ชันฝั่ง GAS ให้รองรับการส่งชื่อไฟล์แบบ Custom ไปด้วย
+async function uploadToGoogleDriveViaGAS(file, expireDateStr, progressTextPrefix, progressBarId, progressTextId, customFileName) {
     if (!file) return "";
+    const finalName = customFileName || file.name;
     const chunkSize = 2 * 1024 * 1024; 
     let start = 0;
     document.getElementById(progressTextId).innerText = `${progressTextPrefix} กำลังเชื่อมต่อ Google Drive...`;
 
-    const initRes = await fetch(GAS_WEB_APP_URL, { method: 'POST', body: JSON.stringify({ action: "initUpload", fileName: file.name, mimeType: file.type || "application/octet-stream", expireDate: expireDateStr }) });
+    const initRes = await fetch(GAS_WEB_APP_URL, { method: 'POST', body: JSON.stringify({ action: "initUpload", fileName: finalName, mimeType: file.type || "application/octet-stream", expireDate: expireDateStr }) });
     const initData = await initRes.json();
     if (initData.status !== "success") throw new Error("เชื่อมต่อ Google Drive ไม่สำเร็จ");
     const uploadUrl = initData.uploadUrl;
@@ -805,14 +1021,14 @@ async function uploadToGoogleDriveViaGAS(file, expireDateStr, progressTextPrefix
             } catch (err) {
                 retryCount++;
                 const currentPercent = Math.round((start / file.size) * 100);
-                document.getElementById(progressTextId).innerText = `${progressTextPrefix} ${file.name} (${currentPercent}%) - ลองใหม่ครั้งที่ ${retryCount}/5...`;
+                document.getElementById(progressTextId).innerText = `${progressTextPrefix} ${finalName} (${currentPercent}%) - ลองใหม่ครั้งที่ ${retryCount}/5...`;
                 if (retryCount >= 5) throw new Error("หมดเวลาส่งข้อมูล กรุณาลองใหม่อีกครั้ง");
                 await new Promise(r => setTimeout(r, 3000)); 
             }
         }
         const percent = Math.round(((end + 1) / file.size) * 100);
         document.getElementById(progressBarId).style.width = percent + '%';
-        document.getElementById(progressTextId).innerText = `${progressTextPrefix} ${file.name} (${percent}%) - (Google Drive)`;
+        document.getElementById(progressTextId).innerText = `${progressTextPrefix} ${finalName} (${percent}%) - (Google Drive)`;
         
         if (chunkData && chunkData.status === "success" && chunkData.fileId) {
             return `https://drive.google.com/file/d/${chunkData.fileId}/view`;
@@ -821,17 +1037,19 @@ async function uploadToGoogleDriveViaGAS(file, expireDateStr, progressTextPrefix
     }
 }
 
-function uploadToFirebaseStorage(file, folderPath, progressPrefix, progressBarId, progressTextId) {
+// อัปเดตฟังก์ชันฝั่ง Firebase ให้รองรับการส่งชื่อไฟล์แบบ Custom ไปด้วย
+function uploadToFirebaseStorage(file, folderPath, progressPrefix, progressBarId, progressTextId, customFileName) {
     if (!file) return Promise.resolve("");
+    const finalName = customFileName || `${Date.now()}_${file.name}`;
     return new Promise((resolve, reject) => {
-        const fileRef = storage.ref().child(`${folderPath}/${Date.now()}_${file.name}`);
+        const fileRef = storage.ref().child(`${folderPath}/${finalName}`);
         const uploadTask = fileRef.put(file);
 
         uploadTask.on('state_changed', 
             (snapshot) => {
                 const progress = Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100);
                 document.getElementById(progressBarId).style.width = progress + '%';
-                document.getElementById(progressTextId).innerText = `${progressPrefix} ${file.name} (${progress}%) - (Firebase)`;
+                document.getElementById(progressTextId).innerText = `${progressPrefix} ${finalName} (${progress}%) - (Firebase)`;
             }, 
             (error) => reject(error), 
             async () => {
@@ -842,7 +1060,6 @@ function uploadToFirebaseStorage(file, folderPath, progressPrefix, progressBarId
     });
 }
 
-// ════════════ NEW REFERRAL (ส่งต่อใหม่) ════════════
 const uploadForm = document.getElementById('upload-form');
 if (uploadForm) {
     uploadForm.addEventListener('submit', async function(event) {
@@ -850,9 +1067,10 @@ if (uploadForm) {
         
         const pdfFile = document.getElementById('upload-pdf').files[0];
         const zipFile = document.getElementById('upload-zip').files[0];
+        const cidVal = document.getElementById('upload-cid').value;
         
         if (!pdfFile && !zipFile) {
-            alert("กรุณาแนบไฟล์ผลอ่าน (PDF) หรือไฟล์ภาพ (ZIP) อย่างน้อย 1 รายการครับ");
+            alert("กรุณาแนบไฟล์ผลอ่าน (Report) หรือไฟล์ภาพ (DICOM) อย่างน้อย 1 รายการครับ");
             return;
         }
 
@@ -864,25 +1082,27 @@ if (uploadForm) {
             const expireDays = parseInt(document.getElementById('upload-expire').value);
             const expireDate = new Date(); expireDate.setDate(expireDate.getDate() + expireDays);
             
-            // 1. อัปโหลดผลอ่าน PDF
             document.getElementById('upload-progress-bar').style.width = '0%';
             let finalPdfUrl = "";
             if (pdfFile) {
+                // สร้างชื่อไฟล์ใหม่ตามแพทเทิร์น CID.YYYYMMDD.HHMMSS
+                const customPdfName = generateFileName(cidVal, pdfFile);
                 if (pdfFile.size <= MAX_GAS_SIZE) {
-                    finalPdfUrl = await uploadToGoogleDriveViaGAS(pdfFile, expireDate.toISOString(), "อัปโหลดผลอ่าน:", 'upload-progress-bar', 'upload-progress-text');
+                    finalPdfUrl = await uploadToGoogleDriveViaGAS(pdfFile, expireDate.toISOString(), "อัปโหลดผลอ่าน:", 'upload-progress-bar', 'upload-progress-text', customPdfName);
                 } else {
-                    finalPdfUrl = await uploadToFirebaseStorage(pdfFile, 'pdfs', "อัปโหลดผลอ่าน:", 'upload-progress-bar', 'upload-progress-text');
+                    finalPdfUrl = await uploadToFirebaseStorage(pdfFile, 'pdfs', "อัปโหลดผลอ่าน:", 'upload-progress-bar', 'upload-progress-text', customPdfName);
                 }
             }
             
-            // 2. อัปโหลด ZIP ภาพ DICOM
             document.getElementById('upload-progress-bar').style.width = '0%';
             let finalZipUrl = "";
             if (zipFile) {
+                // สร้างชื่อไฟล์ใหม่ตามแพทเทิร์น CID.YYYYMMDD.HHMMSS
+                const customZipName = generateFileName(cidVal, zipFile);
                 if (zipFile.size <= MAX_GAS_SIZE) {
-                    finalZipUrl = await uploadToGoogleDriveViaGAS(zipFile, expireDate.toISOString(), "อัปโหลดภาพ:", 'upload-progress-bar', 'upload-progress-text');
+                    finalZipUrl = await uploadToGoogleDriveViaGAS(zipFile, expireDate.toISOString(), "อัปโหลดภาพ:", 'upload-progress-bar', 'upload-progress-text', customZipName);
                 } else {
-                    finalZipUrl = await uploadToFirebaseStorage(zipFile, 'zips', "อัปโหลดภาพ:", 'upload-progress-bar', 'upload-progress-text');
+                    finalZipUrl = await uploadToFirebaseStorage(zipFile, 'zips', "อัปโหลดภาพ:", 'upload-progress-bar', 'upload-progress-text', customZipName);
                 }
             }
 
@@ -890,6 +1110,7 @@ if (uploadForm) {
             await db.collection("referrals").add({
                 hn: document.getElementById('upload-hn').value,
                 patientName: document.getElementById('upload-name').value,
+                cid: cidVal,
                 senderHospital: auth.currentUser.email,
                 receiverHospital: document.getElementById('upload-receiver').value,
                 pdfFileUrl: finalPdfUrl, 
@@ -902,6 +1123,7 @@ if (uploadForm) {
             document.getElementById('upload-modal').classList.add('hidden');
             document.getElementById('upload-pdf-size').innerText = "";
             document.getElementById('upload-zip-size').innerText = "";
+            document.getElementById('hn-search-status').innerText = "";
             document.getElementById('upload-form').reset();
         } catch (error) { alert("เกิดข้อผิดพลาด: " + error.message); } 
         finally {
@@ -912,13 +1134,14 @@ if (uploadForm) {
     });
 }
 
-// ════════════ APPEND FILE (แนบไฟล์เพิ่ม) ════════════
 let currentExpireDateForAppend = null;
+let currentCidForAppend = "NOCID"; // ตัวแปรเก็บค่า CID ชั่วคราวสำหรับการแนบไฟล์เพิ่ม
 
 function openAppendModal(data) {
     document.getElementById('append-doc-id').value = data.id;
     document.getElementById('append-subtitle').innerText = `ผู้ป่วย: ${data.patientName} (HN: ${data.hn})`;
     currentExpireDateForAppend = data.expireAt ? new Date(data.expireAt.seconds * 1000).toISOString() : new Date().toISOString();
+    currentCidForAppend = data.cid || "NOCID";
     
     const pdfGroup = document.getElementById('append-pdf-group');
     const zipGroup = document.getElementById('append-zip-group');
@@ -956,19 +1179,21 @@ if (appendForm) {
             
             if (pdfFile) {
                 document.getElementById('append-progress-bar').style.width = '0%';
+                const customPdfName = generateFileName(currentCidForAppend, pdfFile);
                 if (pdfFile.size <= MAX_GAS_SIZE) {
-                    updates.pdfFileUrl = await uploadToGoogleDriveViaGAS(pdfFile, currentExpireDateForAppend, "อัปโหลดผลอ่าน:", 'append-progress-bar', 'append-progress-text');
+                    updates.pdfFileUrl = await uploadToGoogleDriveViaGAS(pdfFile, currentExpireDateForAppend, "อัปโหลดผลอ่าน:", 'append-progress-bar', 'append-progress-text', customPdfName);
                 } else {
-                    updates.pdfFileUrl = await uploadToFirebaseStorage(pdfFile, 'pdfs', "อัปโหลดผลอ่าน:", 'append-progress-bar', 'append-progress-text');
+                    updates.pdfFileUrl = await uploadToFirebaseStorage(pdfFile, 'pdfs', "อัปโหลดผลอ่าน:", 'append-progress-bar', 'append-progress-text', customPdfName);
                 }
             }
             
             if (zipFile) {
                 document.getElementById('append-progress-bar').style.width = '0%';
+                const customZipName = generateFileName(currentCidForAppend, zipFile);
                 if (zipFile.size <= MAX_GAS_SIZE) {
-                    updates.zipFileUrl = await uploadToGoogleDriveViaGAS(zipFile, currentExpireDateForAppend, "อัปโหลดภาพ:", 'append-progress-bar', 'append-progress-text');
+                    updates.zipFileUrl = await uploadToGoogleDriveViaGAS(zipFile, currentExpireDateForAppend, "อัปโหลดภาพ:", 'append-progress-bar', 'append-progress-text', customZipName);
                 } else {
-                    updates.zipFileUrl = await uploadToFirebaseStorage(zipFile, 'zips', "อัปโหลดภาพ:", 'append-progress-bar', 'append-progress-text');
+                    updates.zipFileUrl = await uploadToFirebaseStorage(zipFile, 'zips', "อัปโหลดภาพ:", 'append-progress-bar', 'append-progress-text', customZipName);
                 }
             }
 
