@@ -137,6 +137,7 @@ tailwind.config = {
         ส่งต่อผู้ป่วยใหม่
       </button>
       
+      <!-- ปุ่มนำเข้าฐานข้อมูล CSV -->
       <button id="btn-import-db" class="w-full mt-2 flex items-center gap-3 px-4 py-3.5 rounded-xl text-base font-semibold border border-slate-700 text-slate-400 hover:bg-slate-800 transition">
         <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
         อัปเดตฐานข้อมูล (CSV)
@@ -463,14 +464,14 @@ let allReferrals = [];
 let currentTab = 'inbox'; 
 
 // ==========================================
-// 1. ระบบ IndexedDB สำหรับเก็บรายชื่อผู้ป่วย (Local Cache)
+// 1. ระบบ IndexedDB สำหรับเก็บรายชื่อผู้ป่วย (Local Cache) - V2 Data Segregation
 // ==========================================
 let localDb;
-const requestDb = window.indexedDB.open("PatientDB", 1);
+const requestDb = window.indexedDB.open("PatientDB_V2", 1);
 requestDb.onupgradeneeded = function(event) {
     localDb = event.target.result;
     if (!localDb.objectStoreNames.contains("patients")) {
-        localDb.createObjectStore("patients", { keyPath: "hn" });
+        localDb.createObjectStore("patients", { keyPath: "id" }); // ใช้ id (email_hn)
     }
 };
 requestDb.onsuccess = function(event) { localDb = event.target.result; };
@@ -494,10 +495,9 @@ if (btnImportDb && csvFileInput) {
             complete: function(results) {
                 const transaction = localDb.transaction(["patients"], "readwrite");
                 const store = transaction.objectStore("patients");
-                store.clear();
                 let count = 0;
+                const myEmail = auth.currentUser.email; // อีเมล รพ. ปัจจุบัน
                 
-                // 🔄 โค้ดส่วนที่ปรับแก้ใหม่เพื่อรองรับ pname, fname, lname
                 results.data.forEach(row => {
                     const keys = Object.keys(row).map(k => k.toLowerCase());
                     const origKeys = Object.keys(row);
@@ -512,28 +512,32 @@ if (btnImportDb && csvFileInput) {
                     
                     if (hnVal) {
                         let fullName = "";
-                        // ถ้า CSV แยกคอลัมน์ pname, fname, lname แบบ HOSxP
                         if (keys.includes('fname') && keys.includes('lname')) {
                             const p = getVal('pname');
                             const f = getVal('fname');
                             const l = getVal('lname');
                             fullName = `${p}${f} ${l}`.trim();
-                        } 
-                        // ถ้า CSV เป็นแบบรวมชื่อมาในคอลัมน์เดียว
-                        else {
+                        } else {
                             const nameKey = origKeys.find(key => key.toLowerCase() === 'name' || key.toLowerCase() === 'fullname');
                             if (nameKey) fullName = String(row[nameKey]).trim();
                         }
 
                         if (fullName) {
-                            store.put({ hn: hnVal, name: fullName, cid: cidVal });
+                            // เซฟโดยใช้ id เป็น email_HN เพื่อแยกข้อมูลระหว่างโรงพยาบาล
+                            store.put({ 
+                                id: `${myEmail}_${hnVal}`, 
+                                hn: hnVal, 
+                                name: fullName, 
+                                cid: cidVal,
+                                owner: myEmail
+                            });
                             count++;
                         }
                     }
                 });
                 
                 transaction.oncomplete = function() {
-                    alert(`อัปเดตฐานข้อมูลสำเร็จ! (จำนวน ${count} รายการ)`);
+                    alert(`อัปเดตฐานข้อมูลสำเร็จ! (จำนวน ${count} รายการ) \nผูกกับบัญชี: ${myEmail}`);
                     btnImportDb.innerHTML = `<svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg> อัปเดตล่าสุด: ${new Date().toLocaleDateString('th-TH')}`;
                     btnImportDb.classList.replace('text-slate-400', 'text-emerald-400');
                     btnImportDb.disabled = false;
@@ -563,12 +567,16 @@ if (inputUploadHn) {
         inputUploadCid.value = "";
         let found = false;
 
+        // ชั้นที่ 1: ค้นหาจาก IndexedDB โดยใช้ กุญแจเฉพาะ รพ.
         if (localDb && !found) {
             try {
+                const myEmail = auth.currentUser.email;
+                const searchId = `${myEmail}_${hnToSearch}`; 
+                
                 const result = await new Promise((resolve, reject) => {
                     const transaction = localDb.transaction(["patients"], "readonly");
                     const store = transaction.objectStore("patients");
-                    const request = store.get(hnToSearch);
+                    const request = store.get(searchId);
                     request.onsuccess = () => resolve(request.result);
                     request.onerror = () => reject(request.error);
                 });
@@ -576,13 +584,14 @@ if (inputUploadHn) {
                 if (result) {
                     inputUploadName.value = result.name;
                     inputUploadCid.value = result.cid || "";
-                    statusUploadHn.innerText = "✅ พบประวัติ (จากฐานข้อมูลในเครื่อง)";
+                    statusUploadHn.innerText = "✅ พบประวัติ (จากฐานข้อมูล รพ. ของคุณ)";
                     statusUploadHn.className = "text-xs font-bold text-emerald-500";
                     found = true;
                 }
             } catch (err) { console.log("IndexedDB search error:", err); }
         }
 
+        // ชั้นที่ 2: วิ่งไปถาม HOSxP (Local API)
         if (!found) {
             try {
                 statusUploadHn.innerText = "กำลังค้นหาคนไข้ใหม่จาก HOSxP...";
@@ -604,15 +613,24 @@ if (inputUploadHn) {
                     statusUploadHn.className = "text-xs font-bold text-blue-500";
                     found = true;
 
+                    // บันทึกคนไข้ใหม่(และ CID) กลับลงไปใน IndexedDB แบบระบุอีเมล
                     if (localDb) {
+                        const myEmail = auth.currentUser.email;
                         const tx = localDb.transaction(["patients"], "readwrite");
                         const store = tx.objectStore("patients");
-                        store.put({ hn: hnToSearch, name: newPatientName, cid: newCid });
+                        store.put({ 
+                            id: `${myEmail}_${hnToSearch}`, 
+                            hn: hnToSearch, 
+                            name: newPatientName, 
+                            cid: newCid,
+                            owner: myEmail
+                        });
                     }
                 }
             } catch (e) { console.log("Local API Not Running or CORS Blocked", e); }
         }
 
+        // ชั้นที่ 3: ค้นหาจากประวัติเก่าบน Firebase
         if (!found) {
             try {
                 statusUploadHn.innerText = "กำลังค้นหาจากประวัติส่งต่อเก่า...";
@@ -628,6 +646,7 @@ if (inputUploadHn) {
             } catch (e) { console.log(e); }
         }
 
+        // ชั้นที่ 4: ไม่พบข้อมูล (Manual)
         if (!found) {
             statusUploadHn.innerText = "❌ ไม่พบชื่อในระบบ (กรุณาพิมพ์เอง)";
             statusUploadHn.className = "text-xs font-bold text-rose-500";
