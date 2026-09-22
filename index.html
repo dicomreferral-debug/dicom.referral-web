@@ -8,6 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<!-- ไลบรารี PapaParse สำหรับอ่านไฟล์ CSV -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 <script>
 tailwind.config = {
@@ -414,7 +415,7 @@ tailwind.config = {
 // ==========================================
 function generateFileName(cid, originalFile) {
     if (!originalFile) return "";
-    const ext = originalFile.name.substring(originalFile.name.lastIndexOf('.') + 1); // ดึงนามสกุลไฟล์ออกมา
+    const ext = originalFile.name.substring(originalFile.name.lastIndexOf('.') + 1);
     const now = new Date();
     const yyyy = now.getFullYear();
     const mm = String(now.getMonth() + 1).padStart(2, '0');
@@ -423,7 +424,7 @@ function generateFileName(cid, originalFile) {
     const min = String(now.getMinutes()).padStart(2, '0');
     const ss = String(now.getSeconds()).padStart(2, '0');
     
-    const fallbackCid = cid ? cid : "NOCID"; // ถ้าเกิดลืมใส่ CID ให้ตั้งเป็น NOCID ไปก่อน
+    const fallbackCid = cid ? cid : "NOCID";
     return `${fallbackCid}.${yyyy}${mm}${dd}.${hh}${min}${ss}.${ext}`;
 }
 
@@ -495,15 +496,39 @@ if (btnImportDb && csvFileInput) {
                 const store = transaction.objectStore("patients");
                 store.clear();
                 let count = 0;
+                
+                // 🔄 โค้ดส่วนที่ปรับแก้ใหม่เพื่อรองรับ pname, fname, lname
                 results.data.forEach(row => {
-                    const hnKey = Object.keys(row).find(key => key.toLowerCase() === 'hn');
-                    const nameKey = Object.keys(row).find(key => key.toLowerCase().includes('name'));
-                    const cidKey = Object.keys(row).find(key => key.toLowerCase() === 'cid'); 
+                    const keys = Object.keys(row).map(k => k.toLowerCase());
+                    const origKeys = Object.keys(row);
                     
-                    if (hnKey && nameKey && row[hnKey]) {
-                        const cVal = (cidKey && row[cidKey]) ? String(row[cidKey]).trim() : "";
-                        store.put({ hn: String(row[hnKey]).trim(), name: String(row[nameKey]).trim(), cid: cVal });
-                        count++;
+                    const getVal = (searchKey) => {
+                        const idx = keys.indexOf(searchKey);
+                        return idx !== -1 ? String(row[origKeys[idx]]).trim() : "";
+                    };
+
+                    const hnVal = getVal('hn');
+                    const cidVal = getVal('cid');
+                    
+                    if (hnVal) {
+                        let fullName = "";
+                        // ถ้า CSV แยกคอลัมน์ pname, fname, lname แบบ HOSxP
+                        if (keys.includes('fname') && keys.includes('lname')) {
+                            const p = getVal('pname');
+                            const f = getVal('fname');
+                            const l = getVal('lname');
+                            fullName = `${p}${f} ${l}`.trim();
+                        } 
+                        // ถ้า CSV เป็นแบบรวมชื่อมาในคอลัมน์เดียว
+                        else {
+                            const nameKey = origKeys.find(key => key.toLowerCase() === 'name' || key.toLowerCase() === 'fullname');
+                            if (nameKey) fullName = String(row[nameKey]).trim();
+                        }
+
+                        if (fullName) {
+                            store.put({ hn: hnVal, name: fullName, cid: cidVal });
+                            count++;
+                        }
                     }
                 });
                 
@@ -991,7 +1016,6 @@ function getBase64(fileBlob) {
     });
 }
 
-// อัปเดตฟังก์ชันฝั่ง GAS ให้รองรับการส่งชื่อไฟล์แบบ Custom ไปด้วย
 async function uploadToGoogleDriveViaGAS(file, expireDateStr, progressTextPrefix, progressBarId, progressTextId, customFileName) {
     if (!file) return "";
     const finalName = customFileName || file.name;
@@ -1037,7 +1061,6 @@ async function uploadToGoogleDriveViaGAS(file, expireDateStr, progressTextPrefix
     }
 }
 
-// อัปเดตฟังก์ชันฝั่ง Firebase ให้รองรับการส่งชื่อไฟล์แบบ Custom ไปด้วย
 function uploadToFirebaseStorage(file, folderPath, progressPrefix, progressBarId, progressTextId, customFileName) {
     if (!file) return Promise.resolve("");
     const finalName = customFileName || `${Date.now()}_${file.name}`;
@@ -1085,7 +1108,6 @@ if (uploadForm) {
             document.getElementById('upload-progress-bar').style.width = '0%';
             let finalPdfUrl = "";
             if (pdfFile) {
-                // สร้างชื่อไฟล์ใหม่ตามแพทเทิร์น CID.YYYYMMDD.HHMMSS
                 const customPdfName = generateFileName(cidVal, pdfFile);
                 if (pdfFile.size <= MAX_GAS_SIZE) {
                     finalPdfUrl = await uploadToGoogleDriveViaGAS(pdfFile, expireDate.toISOString(), "อัปโหลดผลอ่าน:", 'upload-progress-bar', 'upload-progress-text', customPdfName);
@@ -1097,7 +1119,6 @@ if (uploadForm) {
             document.getElementById('upload-progress-bar').style.width = '0%';
             let finalZipUrl = "";
             if (zipFile) {
-                // สร้างชื่อไฟล์ใหม่ตามแพทเทิร์น CID.YYYYMMDD.HHMMSS
                 const customZipName = generateFileName(cidVal, zipFile);
                 if (zipFile.size <= MAX_GAS_SIZE) {
                     finalZipUrl = await uploadToGoogleDriveViaGAS(zipFile, expireDate.toISOString(), "อัปโหลดภาพ:", 'upload-progress-bar', 'upload-progress-text', customZipName);
@@ -1135,7 +1156,7 @@ if (uploadForm) {
 }
 
 let currentExpireDateForAppend = null;
-let currentCidForAppend = "NOCID"; // ตัวแปรเก็บค่า CID ชั่วคราวสำหรับการแนบไฟล์เพิ่ม
+let currentCidForAppend = "NOCID"; 
 
 function openAppendModal(data) {
     document.getElementById('append-doc-id').value = data.id;
