@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DICOM Hub | Dashboard</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style> body { font-family: 'Noto Sans Thai', sans-serif; background-color: #f8fafc; } </style>
+</head>
+<body class="text-slate-800">
+
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-20 px-8 py-5 shadow-sm flex flex-wrap items-center justify-between gap-4">
+    <div class="flex items-center gap-3">
+      <div class="w-12 h-12 rounded-xl bg-indigo-600 text-white grid place-items-center">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+      </div>
+      <div>
+        <h1 class="text-2xl font-bold">สถิติการส่งต่อภาพรังสี (Dashboard)</h1>
+        <p class="text-sm text-slate-500">DICOM Referral Hub Network</p>
+      </div>
+    </div>
+    
+    <div class="flex gap-4">
+      <div>
+        <label class="block text-xs font-semibold text-slate-500 mb-1">เลือกเดือน/ปี</label>
+        <input type="month" id="filter-month" class="px-4 py-2.5 rounded-xl border border-slate-300 bg-white outline-none">
+      </div>
+      <div>
+        <label class="block text-xs font-semibold text-slate-500 mb-1">เลือกโรงพยาบาล</label>
+        <select id="filter-hospital" class="px-4 py-2.5 rounded-xl border border-slate-300 bg-white outline-none min-w-[250px]">
+          <option value="ALL">🌟 ภาพรวมทุกโรงพยาบาล (Overall)</option>
+        </select>
+      </div>
+    </div>
+  </header>
+
+  <main class="p-8 max-w-7xl mx-auto space-y-8">
+    <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+      <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
+        <p class="text-sm font-semibold text-slate-500">เคสทั้งหมดรายเดือน</p>
+        <p id="stat-total" class="text-3xl font-bold text-indigo-600 mt-2">0</p>
+      </div>
+      <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
+        <p class="text-sm font-semibold text-slate-500">ส่งเฉพาะผล (Report)</p>
+        <p id="stat-pdf-only" class="text-3xl font-bold text-blue-600 mt-2">0</p>
+      </div>
+      <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
+        <p class="text-sm font-semibold text-slate-500">ส่งเฉพาะภาพ (DICOM)</p>
+        <p id="stat-zip-only" class="text-3xl font-bold text-purple-600 mt-2">0</p>
+      </div>
+      <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
+        <p class="text-sm font-semibold text-slate-500">ผ่าน Google Drive (<100MB)</p>
+        <p id="stat-drive" class="text-3xl font-bold text-emerald-600 mt-2">0</p>
+      </div>
+      <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
+        <p class="text-sm font-semibold text-slate-500">ผ่าน Firebase (>100MB)</p>
+        <p id="stat-firebase" class="text-3xl font-bold text-amber-500 mt-2">0</p>
+      </div>
+    </div>
+
+    <!-- แสดงผลเมื่อเลือก "ภาพรวมทุกโรงพยาบาล" -->
+    <div id="overall-section" class="grid md:grid-cols-3 gap-8">
+      <div class="md:col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+        <h3 class="text-lg font-bold mb-4">กราฟเปรียบเทียบเคส ส่งเข้า - ส่งออก (รายโรงพยาบาล)</h3>
+        <canvas id="inOutChart" height="120"></canvas>
+      </div>
+      <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col">
+        <h3 class="text-lg font-bold mb-4 flex items-center gap-2">🏆 อันดับส่งต่อเยอะที่สุด</h3>
+        <ul id="ranking-list" class="space-y-3 flex-1 overflow-y-auto"></ul>
+      </div>
+    </div>
+
+    <!-- แสดงผลเมื่อเลือก "โรงพยาบาลเดียว" -->
+    <div id="specific-hosp-section" class="hidden grid md:grid-cols-2 gap-8 mt-8">
+      <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col">
+        <h3 class="text-lg font-bold mb-4 flex items-center gap-2 text-emerald-600">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path></svg>
+          รับเคสมาจาก (Incoming)
+        </h3>
+        <ul id="incoming-list" class="space-y-3 flex-1 overflow-y-auto"></ul>
+      </div>
+      <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col">
+        <h3 class="text-lg font-bold mb-4 flex items-center gap-2 text-rose-500">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 10l7-7m0 0l7 7m-7-7v18"></path></svg>
+          ส่งเคสไปที่ (Outgoing)
+        </h3>
+        <ul id="outgoing-list" class="space-y-3 flex-1 overflow-y-auto"></ul>
+      </div>
+    </div>
+  </main>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script>
+  const firebaseConfig = {
+      apiKey: "AIzaSyDQSXj3-ojPsXbs2i7udVIVPL2E-byCBQc",
+      authDomain: "dicom-referral.firebaseapp.com",
+      projectId: "dicom-referral",
+      storageBucket: "dicom-referral.firebasestorage.app",
+      messagingSenderId: "1013234791188",
+      appId: "1:1013234791188:web:f169e4602dbf4735e40801",
+      measurementId: "G-304XVHFND5"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
+
+  let hospitalMap = {};
+  let chartInstance = null;
+
+  const monthInput = document.getElementById('filter-month');
+  const today = new Date();
+  monthInput.value = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+
+  async function loadHospitals() {
+      const snapshot = await db.collection("hospitals").get();
+      const selectEl = document.getElementById('filter-hospital');
+      snapshot.forEach(doc => {
+          const data = doc.data();
+          hospitalMap[data.email] = data.name;
+          const option = document.createElement('option');
+          option.value = data.email; 
+          option.textContent = data.name;
+          selectEl.appendChild(option);
+      });
+      loadDashboardData();
+  }
+
+  async function loadDashboardData() {
+      const selectedMonth = monthInput.value; 
+      const selectedHosp = document.getElementById('filter-hospital').value;
+      
+      const [year, month] = selectedMonth.split('-');
+      const startDate = new Date(year, month - 1, 1);
+      const endDate = new Date(year, month, 0, 23, 59, 59);
+
+      const snapshot = await db.collection("referrals")
+          .where("createdAt", ">=", startDate)
+          .where("createdAt", "<=", endDate)
+          .get();
+
+      let total = 0, pdfOnly = 0, zipOnly = 0, driveCount = 0, fbCount = 0;
+      let hospStats = {}; 
+      let incomingBreakdown = {};
+      let outgoingBreakdown = {};
+
+      Object.keys(hospitalMap).forEach(email => {
+          hospStats[email] = { name: hospitalMap[email], in: 0, out: 0, total: 0 };
+      });
+
+      snapshot.forEach(doc => {
+          const data = doc.data();
+          const sender = data.senderHospital;
+          const receiver = data.receiverHospital;
+
+          if (selectedHosp !== "ALL" && sender !== selectedHosp && receiver !== selectedHosp) return;
+
+          total++;
+          const hasPdf = !!data.pdfFileUrl;
+          const hasZip = !!data.zipFileUrl;
+          if (hasPdf && !hasZip) pdfOnly++;
+          if (!hasPdf && hasZip) zipOnly++;
+
+          const allUrls = (data.pdfFileUrl || "") + (data.zipFileUrl || "");
+          if (allUrls.includes("drive.google")) driveCount++;
+          if (allUrls.includes("firebasestorage")) fbCount++;
+
+          if (hospStats[sender]) { hospStats[sender].out++; hospStats[sender].total++; }
+          if (hospStats[receiver]) { hospStats[receiver].in++; hospStats[receiver].total++; }
+
+          if (selectedHosp !== "ALL") {
+              if (receiver === selectedHosp) incomingBreakdown[sender] = (incomingBreakdown[sender] || 0) + 1;
+              if (sender === selectedHosp) outgoingBreakdown[receiver] = (outgoingBreakdown[receiver] || 0) + 1;
+          }
+      });
+
+      document.getElementById('stat-total').innerText = total;
+      document.getElementById('stat-pdf-only').innerText = pdfOnly;
+      document.getElementById('stat-zip-only').innerText = zipOnly;
+      document.getElementById('stat-drive').innerText = driveCount;
+      document.getElementById('stat-firebase').innerText = fbCount;
+
+      const overallSec = document.getElementById('overall-section');
+      const specificSec = document.getElementById('specific-hosp-section');
+
+      if (selectedHosp === "ALL") {
+          overallSec.style.display = 'grid';
+          specificSec.style.display = 'none';
+          renderRankingAndChart(hospStats);
+      } else {
+          overallSec.style.display = 'none'; 
+          specificSec.style.display = 'grid';
+          renderBreakdownList('incoming-list', incomingBreakdown, 'bg-emerald-100 text-emerald-700');
+          renderBreakdownList('outgoing-list', outgoingBreakdown, 'bg-rose-100 text-rose-700');
+      }
+  }
+
+  function renderRankingAndChart(hospStats) {
+      const sortedHosp = Object.values(hospStats).sort((a, b) => b.total - a.total);
+      const listEl = document.getElementById('ranking-list');
+      listEl.innerHTML = "";
+      
+      sortedHosp.forEach((h, index) => {
+          if(h.total === 0) return;
+          const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : '🔹';
+          listEl.innerHTML += `<li class="flex justify-between items-center bg-slate-50 p-3 rounded-lg border border-slate-100"><span class="font-medium">${medal} ${h.name}</span><span class="font-bold text-indigo-600 bg-indigo-100 px-3 py-1 rounded-full">${h.total}</span></li>`;
+      });
+      if(listEl.innerHTML === "") listEl.innerHTML = '<p class="text-sm text-slate-400">ยังไม่มีข้อมูลในเดือนนี้</p>';
+
+      const labels = sortedHosp.map(h => h.name);
+      const dataIn = sortedHosp.map(h => h.in);
+      const dataOut = sortedHosp.map(h => h.out);
+
+      const ctx = document.getElementById('inOutChart').getContext('2d');
+      if (chartInstance) chartInstance.destroy();
+      
+      chartInstance = new Chart(ctx, {
+          type: 'bar',
+          data: {
+              labels: labels,
+              datasets: [
+                  { label: 'ส่งออก (เคสออก)', data: dataOut, backgroundColor: '#4f46e5', borderRadius: 4 },
+                  { label: 'รับเข้า (เคสเข้า)', data: dataIn, backgroundColor: '#0ea5e9', borderRadius: 4 }
+              ]
+          },
+          options: { responsive: true, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
+      });
+  }
+
+  function renderBreakdownList(elementId, dataObj, badgeColor) {
+      const listEl = document.getElementById(elementId);
+      listEl.innerHTML = "";
+      
+      const sortedKeys = Object.keys(dataObj).sort((a, b) => dataObj[b] - dataObj[a]);
+      if (sortedKeys.length === 0) {
+          listEl.innerHTML = `<li class="text-sm text-slate-400 p-3">ไม่มีข้อมูลในเดือนนี้</li>`;
+          return;
+      }
+
+      sortedKeys.forEach(email => {
+          const hospName = hospitalMap[email] || email;
+          const count = dataObj[email];
+          listEl.innerHTML += `<li class="flex justify-between items-center bg-slate-50 p-3 rounded-lg border border-slate-100"><span class="font-medium">${hospName}</span><span class="font-bold px-3 py-1 rounded-full ${badgeColor}">${count} เคส</span></li>`;
+      });
+  }
+
+  monthInput.addEventListener('change', loadDashboardData);
+  document.getElementById('filter-hospital').addEventListener('change', loadDashboardData);
+  loadHospitals();
+</script>
+</body>
+</html>
