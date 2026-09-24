@@ -682,8 +682,13 @@ async function loadHospitals() {
         snapshot.forEach((doc) => {
             const data = doc.data();
             hospitalMap[data.email] = data.name;
+            
+            // 🔴 เพิ่มเงื่อนไข: ถ้าอีเมลตรงกับคนที่ล็อกอินอยู่ ให้ข้ามไปไม่ต้องสร้างตัวเลือก
+            if (auth.currentUser && data.email === auth.currentUser.email) return;
+
             const option = document.createElement('option');
-            option.value = data.email; option.textContent = data.name;
+            option.value = data.email; 
+            option.textContent = data.name;
             selectEl.appendChild(option);
         });
         if (auth.currentUser) document.getElementById('current-hospital').innerText = getHospitalDisplayName(auth.currentUser.email);
