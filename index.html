@@ -699,7 +699,7 @@ async function loadHospitals() {
             const data = doc.data();
             hospitalMap[data.email] = data.name;
             
-            // 🔴 เพิ่มเงื่อนไข: ถ้าอีเมลตรงกับคนที่ล็อกอินอยู่ ให้ข้ามไปไม่ต้องสร้างตัวเลือก
+            // 🔴 เงื่อนไข: ถ้าอีเมลตรงกับคนที่ล็อกอินอยู่ ให้ข้ามไปไม่ต้องสร้างตัวเลือก
             if (auth.currentUser && data.email === auth.currentUser.email) return;
 
             const option = document.createElement('option');
@@ -1045,6 +1045,18 @@ if (btnOpenUpload) {
         document.getElementById('upload-zip-size').innerText = "";
         document.getElementById('hn-search-status').innerText = "";
         document.getElementById('upload-modal').classList.remove('hidden');
+        
+        // 🟢 เพิ่มโค้ด Ping ปลุก Google Apps Script ล่วงหน้าแบบเงียบๆ
+        try {
+            fetch(GAS_WEB_APP_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify({ action: "ping" })
+            });
+        } catch (e) {
+            console.log("Ping background error: ", e);
+        }
     });
 }
 document.getElementById('btn-close-upload')?.addEventListener('click', () => document.getElementById('upload-modal').classList.add('hidden'));
