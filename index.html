@@ -1159,7 +1159,7 @@ if (uploadForm) {
                 expireAt: expireDate
             });
 
-            // ==========================================
+           // ==========================================
             // 🚨 ระบบส่งแจ้งเตือนเข้า LINE
             // ==========================================
             document.getElementById('upload-progress-text').innerText = "กำลังส่งการแจ้งเตือน LINE...";
@@ -1167,7 +1167,12 @@ if (uploadForm) {
             const receiverSelect = document.getElementById('upload-receiver');
             const receiverName = receiverSelect.options[receiverSelect.selectedIndex].text;
             
-            const lineMsg = `🔔 มีรายการส่งต่อภาพใหม่!\n\nผู้ป่วย: ${document.getElementById('upload-name').value}\nHN: ${document.getElementById('upload-hn').value}\n\n📤 ต้นทาง: ${senderName}\n📥 ปลายทาง: ${receiverName}\n\nกรุณาตรวจสอบรายละเอียดในระบบ DICOM Hub ครับ`;
+            // 🔴 ดึงค่า CID และแปลงเป็นแบบเซ็นเซอร์ (เหลือ 4 หลักท้าย)
+            const rawCid = document.getElementById('upload-cid').value;
+            const displayCid = getMaskedCID(rawCid);
+            
+            // 🔴 เพิ่ม CID เข้าไปในข้อความแจ้งเตือน
+            const lineMsg = `🔔 มีรายการส่งต่อภาพใหม่!\n\nผู้ป่วย: ${document.getElementById('upload-name').value}\nHN: ${document.getElementById('upload-hn').value}\nCID: ${displayCid}\n\n📤 ต้นทาง: ${senderName}\n📥 ปลายทาง: ${receiverName}\n\nกรุณาตรวจสอบรายละเอียดในระบบ DICOM Hub ครับ`;
             
             try {
                 fetch(GAS_WEB_APP_URL, {
