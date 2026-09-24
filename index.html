@@ -144,6 +144,12 @@ tailwind.config = {
       </button>
       <input type="file" id="csv-file-input" accept=".csv" class="hidden">
       
+      <!-- ปุ่มไปหน้า Dashboard -->
+      <a href="dashboard.html" target="_blank" class="w-full mt-2 flex items-center gap-3 px-4 py-3.5 rounded-xl text-base font-semibold border border-indigo-700 text-indigo-400 hover:bg-indigo-900/30 transition">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
+        ดูสถิติ (Dashboard)
+      </a>
+      
     </nav>
     <div class="p-4 border-t border-white/5 space-y-2">
       <div class="flex items-center gap-3 px-4 py-4 rounded-xl bg-white/5">
@@ -1147,17 +1153,38 @@ if (uploadForm) {
             }
 
             document.getElementById('upload-progress-text').innerText = "กำลังบันทึกข้อมูลเข้าระบบ...";
+            // 🟢 โค้ดที่อัปเดตใหม่: สร้างตัวแปรเดือน-ปีและบันทึกประวัติ
+            const today = new Date();
+            const monthYearStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+            const senderEmail = auth.currentUser.email;
+            const receiverEmail = document.getElementById('upload-receiver').value;
+
             await db.collection("referrals").add({
                 hn: document.getElementById('upload-hn').value,
                 patientName: document.getElementById('upload-name').value,
                 cid: cidVal,
-                senderHospital: auth.currentUser.email,
-                receiverHospital: document.getElementById('upload-receiver').value,
+                senderHospital: senderEmail,
+                receiverHospital: receiverEmail,
                 pdfFileUrl: finalPdfUrl, 
                 zipFileUrl: finalZipUrl,
                 createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-                expireAt: expireDate
+                expireAt: expireDate,
+                // ข้อมูลสำหรับสถิติในอนาคต
+                monthYear: monthYearStr,
+                hasPdf: !!pdfFile,
+                hasZip: !!zipFile,
+                isComplete: (!!pdfFile && !!zipFile)
             });
+
+            // 🟢 โค้ดที่อัปเดตใหม่: บันทึกตัวเลขสะสมใน monthly_stats ทันที
+            try {
+                const statsRef = db.collection("monthly_stats").doc(monthYearStr);
+                await statsRef.set({
+                    totalReferrals: firebase.firestore.FieldValue.increment(1),
+                    [`hospitals.${senderEmail}.out`]: firebase.firestore.FieldValue.increment(1),
+                    [`hospitals.${receiverEmail}.in`]: firebase.firestore.FieldValue.increment(1)
+                }, { merge: true });
+            } catch (statErr) { console.log("Stats update error:", statErr); }
 
            // ==========================================
             // 🚨 ระบบส่งแจ้งเตือนเข้า LINE
