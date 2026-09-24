@@ -91,7 +91,9 @@
     </div>
   </main>
 
+<!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <script>
   const firebaseConfig = {
@@ -104,6 +106,7 @@
       measurementId: "G-304XVHFND5"
   };
   firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth(); // เพิ่มตัวแปร auth
   const db = firebase.firestore();
 
   let hospitalMap = {};
@@ -247,7 +250,17 @@
 
   monthInput.addEventListener('change', loadDashboardData);
   document.getElementById('filter-hospital').addEventListener('change', loadDashboardData);
-  loadHospitals();
+
+  // 🟢 ตรวจสอบสถานะล็อกอินก่อนดึงข้อมูล
+  auth.onAuthStateChanged(user => {
+      if (user) {
+          loadHospitals();
+      } else {
+          // ถ้าไม่ได้ล็อกอินในหน้า index ให้แจ้งเตือน
+          document.body.innerHTML = '<div style="text-align:center; padding: 50px; font-family: sans-serif;"><h2>กรุณาเข้าสู่ระบบก่อนดูสถิติ</h2><p>ระบบจะพาคุณกลับไปหน้าล็อกอิน</p></div>';
+          setTimeout(() => { window.location.href = "index.html"; }, 2000);
+      }
+  });
 </script>
 </body>
 </html>
