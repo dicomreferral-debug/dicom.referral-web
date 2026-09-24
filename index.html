@@ -434,12 +434,12 @@ function generateFileName(cid, originalFile) {
 // ==========================================
 function getMaskedCID(cid) {
     if (!cid || cid.length !== 13) return cid || "-";
-    return `x-xxxx-xxxx${cid.substring(9, 10)}-${cid.substring(10, 12)}-${cid.substring(12, 13)}`;
+    return `xxxxxxxxx${cid.substring(9, 13)}`;
 }
 
 function getFullCID(cid) {
     if (!cid || cid.length !== 13) return cid || "-";
-    return `${cid[0]}-${cid.substring(1, 5)}-${cid.substring(5, 10)}-${cid.substring(10, 12)}-${cid[12]}`;
+    return cid;
 }
 
 const firebaseConfig = {
