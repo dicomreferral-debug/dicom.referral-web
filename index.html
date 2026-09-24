@@ -137,17 +137,14 @@ tailwind.config = {
         ส่งต่อผู้ป่วยใหม่
       </button>
       
-      <!-- เพิ่มเส้นคั่นและหัวข้อใหม่ เพื่อแยกปุ่มไม่ให้ติดกัน -->
       <div class="mt-8 border-t border-white/5 pt-6"></div>
       <p class="px-4 pb-2 text-sm font-bold tracking-widest text-slate-500">เครื่องมือเพิ่มเติม</p>
       
-      <!-- ปุ่มไปหน้า Dashboard (สลับมาอยู่ด้านบน) -->
       <a href="dashboard.html" target="_blank" class="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-base font-semibold border border-indigo-700 text-indigo-400 hover:bg-indigo-900/30 transition">
         <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
         ดูสถิติ (Dashboard)
       </a>
 
-      <!-- ปุ่มนำเข้าฐานข้อมูล CSV (สลับไปอยู่ด้านล่าง) -->
       <button id="btn-import-db" class="w-full mt-2 flex items-center gap-3 px-4 py-3.5 rounded-xl text-base font-semibold border border-slate-700 text-slate-400 hover:bg-slate-800 transition">
         <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
         อัปเดตฐานข้อมูล (CSV)
@@ -1046,7 +1043,6 @@ if (btnOpenUpload) {
         document.getElementById('hn-search-status').innerText = "";
         document.getElementById('upload-modal').classList.remove('hidden');
         
-        // 🟢 เพิ่มโค้ด Ping ปลุก Google Apps Script ล่วงหน้าแบบเงียบๆ
         try {
             fetch(GAS_WEB_APP_URL, {
                 method: 'POST',
@@ -1054,9 +1050,7 @@ if (btnOpenUpload) {
                 headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                 body: JSON.stringify({ action: "ping" })
             });
-        } catch (e) {
-            console.log("Ping background error: ", e);
-        }
+        } catch (e) { console.log("Ping background error: ", e); }
     });
 }
 document.getElementById('btn-close-upload')?.addEventListener('click', () => document.getElementById('upload-modal').classList.add('hidden'));
@@ -1186,7 +1180,6 @@ if (uploadForm) {
             }
 
             document.getElementById('upload-progress-text').innerText = "กำลังบันทึกข้อมูลเข้าระบบ...";
-            // 🟢 โค้ดที่อัปเดตใหม่: สร้างตัวแปรเดือน-ปีและบันทึกประวัติ
             const today = new Date();
             const monthYearStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
             const senderEmail = auth.currentUser.email;
@@ -1202,14 +1195,12 @@ if (uploadForm) {
                 zipFileUrl: finalZipUrl,
                 createdAt: firebase.firestore.FieldValue.serverTimestamp(),
                 expireAt: expireDate,
-                // ข้อมูลสำหรับสถิติในอนาคต
                 monthYear: monthYearStr,
                 hasPdf: !!pdfFile,
                 hasZip: !!zipFile,
                 isComplete: (!!pdfFile && !!zipFile)
             });
 
-            // 🟢 โค้ดที่อัปเดตใหม่: บันทึกตัวเลขสะสมใน monthly_stats ทันที
             try {
                 const statsRef = db.collection("monthly_stats").doc(monthYearStr);
                 await statsRef.set({
@@ -1220,19 +1211,23 @@ if (uploadForm) {
             } catch (statErr) { console.log("Stats update error:", statErr); }
 
            // ==========================================
-            // 🚨 ระบบส่งแจ้งเตือนเข้า LINE
+            // 🚨 ระบบส่งแจ้งเตือนเข้า LINE (ครั้งแรก)
             // ==========================================
             document.getElementById('upload-progress-text').innerText = "กำลังส่งการแจ้งเตือน LINE...";
             const senderName = document.getElementById('current-hospital').innerText;
             const receiverSelect = document.getElementById('upload-receiver');
             const receiverName = receiverSelect.options[receiverSelect.selectedIndex].text;
             
-            // 🔴 ดึงค่า CID และแปลงเป็นแบบเซ็นเซอร์ (เหลือ 4 หลักท้าย)
             const rawCid = document.getElementById('upload-cid').value;
             const displayCid = getMaskedCID(rawCid);
             
-            // 🔴 เพิ่ม CID เข้าไปในข้อความแจ้งเตือน
-            const lineMsg = `🔔 มีรายการส่งต่อภาพใหม่!\n\nผู้ป่วย: ${document.getElementById('upload-name').value}\nHN: ${document.getElementById('upload-hn').value}\nCID: ${displayCid}\n\n📤 ต้นทาง: ${senderName}\n📥 ปลายทาง: ${receiverName}\n\nกรุณาตรวจสอบรายละเอียดในระบบ DICOM Hub ครับ`;
+            // 🔴 แจ้งสถานะการแนบไฟล์
+            let fileTypesStr = "";
+            if (pdfFile && zipFile) fileTypesStr = "ส่งมาให้ทั้งภาพและผลอ่าน";
+            else if (pdfFile) fileTypesStr = "ส่งผลอ่านมา";
+            else if (zipFile) fileTypesStr = "ส่งภาพการตรวจมา";
+
+            const lineMsg = `🔔 มีรายการส่งต่อใหม่!\n\nผู้ป่วย: ${document.getElementById('upload-name').value}\nHN: ${document.getElementById('upload-hn').value}\nCID: ${displayCid}\n📂 สิ่งที่ส่งมา: ${fileTypesStr}\n\n📤 ต้นทาง: ${senderName}\n📥 ปลายทาง: ${receiverName}\n\nกรุณาตรวจสอบรายละเอียดในระบบ DICOM Hub ครับ`;
             
             try {
                 fetch(GAS_WEB_APP_URL, {
@@ -1266,8 +1261,10 @@ if (uploadForm) {
 
 let currentExpireDateForAppend = null;
 let currentCidForAppend = "NOCID"; 
+let currentAppendData = null; // เก็บข้อมูลชั่วคราวเพื่อส่ง LINE
 
 function openAppendModal(data) {
+    currentAppendData = data; // บันทึกไว้ใช้ตอนส่ง LINE
     document.getElementById('append-doc-id').value = data.id;
     document.getElementById('append-subtitle').innerText = `ผู้ป่วย: ${data.patientName} (HN: ${data.hn})`;
     currentExpireDateForAppend = data.expireAt ? new Date(data.expireAt.seconds * 1000).toISOString() : new Date().toISOString();
@@ -1329,6 +1326,36 @@ if (appendForm) {
 
             document.getElementById('append-progress-text').innerText = "กำลังอัปเดตข้อมูลเข้าระบบ...";
             await db.collection("referrals").doc(docId).update(updates);
+
+            // ==========================================
+            // 🚨 ระบบส่งแจ้งเตือนเข้า LINE (เมื่อแนบไฟล์เพิ่ม)
+            // ==========================================
+            document.getElementById('append-progress-text').innerText = "กำลังส่งการแจ้งเตือน LINE...";
+            const senderName = getHospitalDisplayName(currentAppendData.senderHospital);
+            const receiverName = getHospitalDisplayName(currentAppendData.receiverHospital);
+            const displayCid = getMaskedCID(currentCidForAppend);
+
+            let fileTypesStr = "";
+            if (pdfFile && zipFile) fileTypesStr = "แนบเพิ่มทั้งภาพและผลอ่าน";
+            else if (pdfFile) fileTypesStr = "แนบผลอ่านเพิ่มเติม";
+            else if (zipFile) fileTypesStr = "แนบภาพการตรวจเพิ่มเติม";
+
+            const lineMsg = `🔔 มีการแนบไฟล์เพิ่มเติม!\n\nผู้ป่วย: ${currentAppendData.patientName}\nHN: ${currentAppendData.hn}\nCID: ${displayCid}\n📂 อัปเดต: ${fileTypesStr}\n\n📤 ต้นทาง: ${senderName}\n📥 ปลายทาง: ${receiverName}\n\nกรุณาตรวจสอบรายละเอียดในระบบ DICOM Hub ครับ`;
+
+            try {
+                fetch(GAS_WEB_APP_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify({
+                        action: "sendLine",
+                        message: lineMsg
+                    })
+                });
+            } catch (lineErr) {
+                console.log("LINE Error: ", lineErr);
+            }
+            // ==========================================
 
             alert("แนบไฟล์เพิ่มสำเร็จ!");
             document.getElementById('append-modal').classList.add('hidden');
