@@ -961,74 +961,13 @@ function openDetailModal(data) {
 }
 
 // ==========================================
-// 🖨️ ระบบสั่งพิมพ์ผลอ่าน (แก้ปัญหา CORS ของ Google Drive)
+// 🖨️ ระบบเปิดหน้าพิมพ์ผลอ่าน (เปิดแท็บใหม่แบบไม่โดนบล็อก)
 // ==========================================
-async function printPdfDocument() {
+function printPdfDocument() {
     const iframe = document.getElementById('modal-pdf-viewer');
-    if (!iframe || !iframe.src) return;
-
-    const btnPrint = document.getElementById('btn-print-pdf');
-    const originalContent = btnPrint.innerHTML;
-    
-    // เปลี่ยนปุ่มเป็นสถานะโหลด
-    btnPrint.innerHTML = `<svg class="animate-spin w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> กำลังเตรียมพิมพ์...`;
-    btnPrint.disabled = true;
-
-    try {
-        let printUrl = iframe.src;
-
-        // ดึงไฟล์กลับมาจาก Google Drive เป็น Base64
-        if (iframe.src.includes('drive.google.com')) {
-            const match = iframe.src.match(/\/d\/(.+?)\//);
-            if (match && match[1]) {
-                const fileId = match[1];
-                const res = await fetch(GAS_WEB_APP_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                    body: JSON.stringify({ action: "downloadPdf", fileId: fileId })
-                });
-                
-                const data = await res.json();
-                if (data.status === "success") {
-                    const byteCharacters = atob(data.base64);
-                    const byteNumbers = new Array(byteCharacters.length);
-                    for (let i = 0; i < byteCharacters.length; i++) {
-                        byteNumbers[i] = byteCharacters.charCodeAt(i);
-                    }
-                    const byteArray = new Uint8Array(byteNumbers);
-                    const blob = new Blob([byteArray], { type: 'application/pdf' });
-                    printUrl = URL.createObjectURL(blob);
-                } else {
-                    throw new Error("Fetch PDF failed");
-                }
-            }
-        }
-
-        // สร้าง iframe ล่องหนเพื่อสั่งพิมพ์
-        const printFrame = document.createElement('iframe');
-        printFrame.style.display = 'none';
-        printFrame.src = printUrl;
-        document.body.appendChild(printFrame);
-        
-        printFrame.onload = function() {
-            try {
-                printFrame.contentWindow.focus();
-                printFrame.contentWindow.print();
-            } catch (printErr) {
-                window.open(printUrl, '_blank');
-            }
-            setTimeout(() => document.body.removeChild(printFrame), 5000);
-        };
-
-    } catch (error) {
-        console.error(error);
-        const fallbackWin = window.open(iframe.src, '_blank');
-        if (fallbackWin) {
-            alert("เนื่องจากไฟล์มีขนาดใหญ่ เบราว์เซอร์จึงเปิดหน้าต่างใหม่\n\n👉 กรุณากดปุ่ม 🖨️ หรือกด Ctrl+P ในหน้าต่างที่เปิดขึ้นมาใหม่เพื่อสั่งพิมพ์ครับ");
-        }
-    } finally {
-        btnPrint.innerHTML = originalContent;
-        btnPrint.disabled = false;
+    if (iframe && iframe.src) {
+        // สั่งเปิดแท็บใหม่ทันทีเมื่อคลิก (Popup Blocker จะไม่บล็อกวิธีนี้)
+        window.open(iframe.src, '_blank');
     }
 }
 
