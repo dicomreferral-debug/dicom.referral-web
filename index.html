@@ -961,13 +961,19 @@ function openDetailModal(data) {
 }
 
 // ==========================================
-// 🖨️ ระบบเปิดหน้าพิมพ์ผลอ่าน (เปิดแท็บใหม่แบบไม่โดนบล็อก)
+// 🖨️ ระบบเปิดหน้าพิมพ์ผลอ่าน (เปิดแท็บใหม่แบบหน้า View ปกติ)
 // ==========================================
 function printPdfDocument() {
     const iframe = document.getElementById('modal-pdf-viewer');
     if (iframe && iframe.src) {
-        // สั่งเปิดแท็บใหม่ทันทีเมื่อคลิก (Popup Blocker จะไม่บล็อกวิธีนี้)
-        window.open(iframe.src, '_blank');
+        let openUrl = iframe.src;
+        
+        // หากเป็นลิงก์ Google Drive ให้เปลี่ยนจากโหมด preview เป็นโหมด view ธรรมดา
+        if (openUrl.includes('drive.google.com') && openUrl.includes('/preview')) {
+            openUrl = openUrl.replace('/preview', '/view');
+        }
+        
+        window.open(openUrl, '_blank');
     }
 }
 
