@@ -1074,13 +1074,49 @@ function getBase64(fileBlob) {
     });
 }
 
+// ==========================================
+// 🚀 ฟังก์ชันอัปโหลด Google Drive (อัปเกรดความเร็ว แบบ Parallel + Simple)
+// ==========================================
 async function uploadToGoogleDriveViaGAS(file, expireDateStr, progressTextPrefix, progressBarId, progressTextId, customFileName) {
     if (!file) return "";
     const finalName = customFileName || file.name;
-    const chunkSize = 2 * 1024 * 1024; 
-    let start = 0;
-    document.getElementById(progressTextId).innerText = `${progressTextPrefix} กำลังเชื่อมต่อ Google Drive...`;
+    document.getElementById(progressTextId).innerText = `${progressTextPrefix} กำลังเตรียมข้อมูล...`;
 
+    // ⚡ เทคนิคที่ 1: ถ้าไฟล์เล็กกว่า 5MB ให้แปลงเป็น Base64 แล้วส่งรวดเดียว (Simple Upload)
+    if (file.size <= 5 * 1024 * 1024) { 
+        document.getElementById(progressBarId).style.width = '50%';
+        const base64Data = await getBase64(file);
+        
+        try {
+            document.getElementById(progressTextId).innerText = `${progressTextPrefix} กำลังส่งข้อมูล (Drive)...`;
+            const res = await fetch(GAS_WEB_APP_URL, {
+                method: 'POST',
+                body: JSON.stringify({
+                    action: "simpleUpload", 
+                    fileName: finalName,
+                    mimeType: file.type || "application/octet-stream",
+                    expireDate: expireDateStr,
+                    base64Data: base64Data
+                })
+            });
+            const data = await res.json();
+            if (data.status === "success" && data.fileId) {
+                document.getElementById(progressBarId).style.width = '100%';
+                document.getElementById(progressTextId).innerText = `${progressTextPrefix} ${finalName} (100%)`;
+                return `https://drive.google.com/file/d/${data.fileId}/view`;
+            } else {
+                throw new Error(data.message || "Simple Upload Failed");
+            }
+        } catch (err) {
+            console.log("Simple upload failed, fallback to chunk...", err);
+            // ถ้า Simple พลาด จะตกไปใช้ Chunk ด้านล่างแทน
+        }
+    }
+
+    // 🐢 เทคนิคที่ 2: ระบบหั่นไฟล์ (สำหรับไฟล์ที่ใหญ่กว่า 5MB)
+    const chunkSize = 8 * 1024 * 1024; // ขยาย Chunk เป็น 8MB
+    let start = 0;
+    
     const initRes = await fetch(GAS_WEB_APP_URL, { method: 'POST', body: JSON.stringify({ action: "initUpload", fileName: finalName, mimeType: file.type || "application/octet-stream", expireDate: expireDateStr }) });
     const initData = await initRes.json();
     if (initData.status !== "success") throw new Error("เชื่อมต่อ Google Drive ไม่สำเร็จ");
@@ -1103,14 +1139,14 @@ async function uploadToGoogleDriveViaGAS(file, expireDateStr, progressTextPrefix
             } catch (err) {
                 retryCount++;
                 const currentPercent = Math.round((start / file.size) * 100);
-                document.getElementById(progressTextId).innerText = `${progressTextPrefix} ${finalName} (${currentPercent}%) - ลองใหม่ครั้งที่ ${retryCount}/5...`;
-                if (retryCount >= 5) throw new Error("หมดเวลาส่งข้อมูล กรุณาลองใหม่อีกครั้ง");
-                await new Promise(r => setTimeout(r, 3000)); 
+                document.getElementById(progressTextId).innerText = `${progressTextPrefix} ${finalName} (${currentPercent}%) - รอการเชื่อมต่อใหม่...`;
+                if (retryCount >= 5) throw new Error("หมดเวลาส่งข้อมูล");
+                await new Promise(r => setTimeout(r, 2000)); 
             }
         }
         const percent = Math.round(((end + 1) / file.size) * 100);
         document.getElementById(progressBarId).style.width = percent + '%';
-        document.getElementById(progressTextId).innerText = `${progressTextPrefix} ${finalName} (${percent}%) - (Google Drive)`;
+        document.getElementById(progressTextId).innerText = `${progressTextPrefix} ${finalName} (${percent}%) - (Drive)`;
         
         if (chunkData && chunkData.status === "success" && chunkData.fileId) {
             return `https://drive.google.com/file/d/${chunkData.fileId}/view`;
@@ -1162,28 +1198,40 @@ if (uploadForm) {
         try {
             const expireDays = parseInt(document.getElementById('upload-expire').value);
             const expireDate = new Date(); expireDate.setDate(expireDate.getDate() + expireDays);
+            const expireDateStr = expireDate.toISOString();
             
-            document.getElementById('upload-progress-bar').style.width = '0%';
-            let finalPdfUrl = "";
+            // ⚡ เทคนิคที่ 3: สั่งให้อัปโหลด PDF และ ZIP วิ่งออกไปพร้อมกัน (Parallel Upload)
+            let uploadTasks = [];
+            
+            // เตรียมงานอัปโหลด PDF
+            let pdfPromise = Promise.resolve("");
             if (pdfFile) {
+                document.getElementById('upload-progress-bar').style.width = '10%'; // กราฟิกหลอกตา
                 const customPdfName = generateFileName(cidVal, pdfFile);
                 if (pdfFile.size <= MAX_GAS_SIZE) {
-                    finalPdfUrl = await uploadToGoogleDriveViaGAS(pdfFile, expireDate.toISOString(), "อัปโหลดผลอ่าน:", 'upload-progress-bar', 'upload-progress-text', customPdfName);
+                    pdfPromise = uploadToGoogleDriveViaGAS(pdfFile, expireDateStr, "อัปโหลดผลอ่าน:", 'upload-progress-bar', 'upload-progress-text', customPdfName);
                 } else {
-                    finalPdfUrl = await uploadToFirebaseStorage(pdfFile, 'pdfs', "อัปโหลดผลอ่าน:", 'upload-progress-bar', 'upload-progress-text', customPdfName);
+                    pdfPromise = uploadToFirebaseStorage(pdfFile, 'pdfs', "อัปโหลดผลอ่าน:", 'upload-progress-bar', 'upload-progress-text', customPdfName);
                 }
             }
             
-            document.getElementById('upload-progress-bar').style.width = '0%';
-            let finalZipUrl = "";
+            // เตรียมงานอัปโหลด ZIP
+            let zipPromise = Promise.resolve("");
             if (zipFile) {
                 const customZipName = generateFileName(cidVal, zipFile);
                 if (zipFile.size <= MAX_GAS_SIZE) {
-                    finalZipUrl = await uploadToGoogleDriveViaGAS(zipFile, expireDate.toISOString(), "อัปโหลดภาพ:", 'upload-progress-bar', 'upload-progress-text', customZipName);
+                    zipPromise = uploadToGoogleDriveViaGAS(zipFile, expireDateStr, "อัปโหลดภาพ:", 'upload-progress-bar', 'upload-progress-text', customZipName);
                 } else {
-                    finalZipUrl = await uploadToFirebaseStorage(zipFile, 'zips', "อัปโหลดภาพ:", 'upload-progress-bar', 'upload-progress-text', customZipName);
+                    zipPromise = uploadToFirebaseStorage(zipFile, 'zips', "อัปโหลดภาพ:", 'upload-progress-bar', 'upload-progress-text', customZipName);
                 }
             }
+
+            document.getElementById('upload-progress-text').innerText = "กำลังนำส่งไฟล์...";
+            
+            // สั่งวิ่งออกไปพร้อมกัน แล้วรอให้ทั้งคู่เสร็จ (ประหยัดเวลาลงครึ่งนึง)
+            const [finalPdfUrl, finalZipUrl] = await Promise.all([pdfPromise, zipPromise]);
+
+            document.getElementById('upload-progress-bar').style.width = '100%';
 
             document.getElementById('upload-progress-text').innerText = "กำลังบันทึกข้อมูลเข้าระบบ...";
             const today = new Date();
@@ -1323,25 +1371,36 @@ if (appendForm) {
         try {
             let updates = {};
             
+            // ⚡ เทคนิคที่ 3: สั่งให้อัปโหลดแนบไฟล์เพิ่ม วิ่งออกไปพร้อมกัน (Parallel Upload)
+            let pdfPromise = Promise.resolve(null);
             if (pdfFile) {
-                document.getElementById('append-progress-bar').style.width = '0%';
+                document.getElementById('append-progress-bar').style.width = '10%';
                 const customPdfName = generateFileName(currentCidForAppend, pdfFile);
                 if (pdfFile.size <= MAX_GAS_SIZE) {
-                    updates.pdfFileUrl = await uploadToGoogleDriveViaGAS(pdfFile, currentExpireDateForAppend, "อัปโหลดผลอ่าน:", 'append-progress-bar', 'append-progress-text', customPdfName);
+                    pdfPromise = uploadToGoogleDriveViaGAS(pdfFile, currentExpireDateForAppend, "อัปโหลดผลอ่าน:", 'append-progress-bar', 'append-progress-text', customPdfName);
                 } else {
-                    updates.pdfFileUrl = await uploadToFirebaseStorage(pdfFile, 'pdfs', "อัปโหลดผลอ่าน:", 'append-progress-bar', 'append-progress-text', customPdfName);
+                    pdfPromise = uploadToFirebaseStorage(pdfFile, 'pdfs', "อัปโหลดผลอ่าน:", 'append-progress-bar', 'append-progress-text', customPdfName);
                 }
             }
             
+            let zipPromise = Promise.resolve(null);
             if (zipFile) {
-                document.getElementById('append-progress-bar').style.width = '0%';
                 const customZipName = generateFileName(currentCidForAppend, zipFile);
                 if (zipFile.size <= MAX_GAS_SIZE) {
-                    updates.zipFileUrl = await uploadToGoogleDriveViaGAS(zipFile, currentExpireDateForAppend, "อัปโหลดภาพ:", 'append-progress-bar', 'append-progress-text', customZipName);
+                    zipPromise = uploadToGoogleDriveViaGAS(zipFile, currentExpireDateForAppend, "อัปโหลดภาพ:", 'append-progress-bar', 'append-progress-text', customZipName);
                 } else {
-                    updates.zipFileUrl = await uploadToFirebaseStorage(zipFile, 'zips', "อัปโหลดภาพ:", 'append-progress-bar', 'append-progress-text', customZipName);
+                    zipPromise = uploadToFirebaseStorage(zipFile, 'zips', "อัปโหลดภาพ:", 'append-progress-bar', 'append-progress-text', customZipName);
                 }
             }
+
+            document.getElementById('append-progress-text').innerText = "กำลังนำส่งไฟล์...";
+            
+            const [finalPdfUrl, finalZipUrl] = await Promise.all([pdfPromise, zipPromise]);
+
+            if (finalPdfUrl) updates.pdfFileUrl = finalPdfUrl;
+            if (finalZipUrl) updates.zipFileUrl = finalZipUrl;
+
+            document.getElementById('append-progress-bar').style.width = '100%';
 
             document.getElementById('append-progress-text').innerText = "กำลังอัปเดตข้อมูลเข้าระบบ...";
             await db.collection("referrals").doc(docId).update(updates);
