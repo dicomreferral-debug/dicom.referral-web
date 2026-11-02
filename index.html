@@ -108,58 +108,68 @@ tailwind.config = {
      DASHBOARD
 ═══════════════════════════════════════════ -->
 <section id="dashboard-section" class="hidden min-h-screen">
-<div class="flex">
+<!-- Backdrop สำหรับเปิดเมนูบนมือถือ/จอย่อ -->
+<div id="sidebar-backdrop" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-40 hidden transition-opacity duration-300 lg:hidden"></div>
+
+<div class="flex min-h-screen">
   <!-- Sidebar -->
-  <aside id="sidebar" class="fixed lg:sticky top-0 z-40 h-screen w-[300px] -translate-x-full lg:translate-x-0 transition-transform duration-300 bg-ink-900 text-slate-300 flex flex-col border-r border-white/5 shrink-0">
-    <div class="p-6 flex items-center gap-4 border-b border-white/5">
-      <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-brand-400 to-brand-700 grid place-items-center text-white shrink-0">
-        <svg class="w-8 h-8" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M4 6h16M4 6v12a2 2 0 002 2h12a2 2 0 002-2V6M9 12l2 2 4-4"/></svg>
+  <aside id="sidebar" class="fixed top-0 bottom-0 left-0 z-50 w-[280px] sm:w-[300px] -translate-x-full lg:translate-x-0 lg:sticky transition-transform duration-300 bg-ink-900 text-slate-300 flex flex-col border-r border-white/5 shrink-0 h-screen">
+    <div class="p-5 sm:p-6 flex items-center justify-between border-b border-white/5">
+      <div class="flex items-center gap-3 sm:gap-4 min-w-0">
+        <div class="w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-gradient-to-br from-brand-400 to-brand-700 grid place-items-center text-white shrink-0">
+          <svg class="w-7 h-7 sm:w-8 sm:h-8" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M4 6h16M4 6v12a2 2 0 002 2h12a2 2 0 002-2V6M9 12l2 2 4-4"/></svg>
+        </div>
+        <div class="min-w-0">
+          <p class="text-lg sm:text-xl font-semibold text-white truncate">DICOM Hub</p>
+          <p class="text-xs sm:text-sm text-slate-400">Referral System</p>
+        </div>
       </div>
-      <div class="min-w-0">
-        <p class="text-xl font-semibold text-white truncate">DICOM Hub</p>
-        <p class="text-sm text-slate-400">Referral System</p>
-      </div>
+      <!-- ปุ่มกากบาทปิด Sidebar บนจอมือถือ -->
+      <button id="btn-close-sidebar" class="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 lg:hidden">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
     </div>
+    
     <nav class="p-4 space-y-2 flex-1 overflow-y-auto">
-      <p class="px-4 pt-4 pb-2 text-sm font-bold tracking-widest text-slate-500">รายการ</p>
-      <button id="tab-inbox" data-tab="inbox" class="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-base font-medium transition bg-brand-500/15 text-brand-300 ring-1 ring-brand-500/30">
-        <svg class="w-6 h-6 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0h-4l-1.5 2h-5L8 13H4m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5"/></svg>
+      <p class="px-4 pt-2 pb-2 text-xs sm:text-sm font-bold tracking-widest text-slate-500">รายการ</p>
+      <button id="tab-inbox" data-tab="inbox" class="w-full flex items-center gap-3 px-4 py-3 sm:py-3.5 rounded-xl text-sm sm:text-base font-medium transition bg-brand-500/15 text-brand-300 ring-1 ring-brand-500/30">
+        <svg class="w-5 h-5 sm:w-6 sm:h-6 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0h-4l-1.5 2h-5L8 13H4m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5"/></svg>
         <span class="flex-1 text-left">ผู้ป่วยเข้า</span>
       </button>
-      <button id="tab-outbox" data-tab="outbox" class="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-base font-medium transition hover:bg-white/5 text-slate-400">
-        <svg class="w-6 h-6 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 16V4m0 0L8 8m4-4l4 4M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>
+      <button id="tab-outbox" data-tab="outbox" class="w-full flex items-center gap-3 px-4 py-3 sm:py-3.5 rounded-xl text-sm sm:text-base font-medium transition hover:bg-white/5 text-slate-400">
+        <svg class="w-5 h-5 sm:w-6 sm:h-6 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 16V4m0 0L8 8m4-4l4 4M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>
         <span class="flex-1 text-left">ผู้ป่วยออก</span>
       </button>
       
-      <p class="px-4 pt-6 pb-2 text-sm font-bold tracking-widest text-slate-500">การทำงาน</p>
-      <button id="btn-open-upload" class="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-base font-semibold bg-gradient-to-r from-brand-500 to-brand-600 text-white hover:from-brand-400 hover:to-brand-500 shadow-lg shadow-brand-900/40 transition">
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M12 5v14m-7-7h14"/></svg>
+      <p class="px-4 pt-5 pb-2 text-xs sm:text-sm font-bold tracking-widest text-slate-500">การทำงาน</p>
+      <button id="btn-open-upload" class="w-full flex items-center gap-3 px-4 py-3 sm:py-3.5 rounded-xl text-sm sm:text-base font-semibold bg-gradient-to-r from-brand-500 to-brand-600 text-white hover:from-brand-400 hover:to-brand-500 shadow-lg shadow-brand-900/40 transition">
+        <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M12 5v14m-7-7h14"/></svg>
         ส่งต่อผู้ป่วยใหม่
       </button>
       
-      <div class="mt-8 border-t border-white/5 pt-6"></div>
-      <p class="px-4 pb-2 text-sm font-bold tracking-widest text-slate-500">เครื่องมือเพิ่มเติม</p>
+      <div class="mt-6 border-t border-white/5 pt-4"></div>
+      <p class="px-4 pb-2 text-xs sm:text-sm font-bold tracking-widest text-slate-500">เครื่องมือเพิ่มเติม</p>
       
-      <a href="dashboard.html" target="_blank" class="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-base font-semibold border border-indigo-700 text-indigo-400 hover:bg-indigo-900/30 transition">
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
+      <a href="dashboard.html" target="_blank" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm sm:text-base font-semibold border border-indigo-700 text-indigo-400 hover:bg-indigo-900/30 transition">
+        <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
         ดูสถิติ (Dashboard)
       </a>
 
-      <button id="btn-import-db" class="w-full mt-2 flex items-center gap-3 px-4 py-3.5 rounded-xl text-base font-semibold border border-slate-700 text-slate-400 hover:bg-slate-800 transition">
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
+      <button id="btn-import-db" class="w-full mt-2 flex items-center gap-3 px-4 py-3 rounded-xl text-sm sm:text-base font-semibold border border-slate-700 text-slate-400 hover:bg-slate-800 transition">
+        <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
         อัปเดตฐานข้อมูล (CSV)
       </button>
       <input type="file" id="csv-file-input" accept=".csv" class="hidden">
-      
     </nav>
+
     <div class="p-4 border-t border-white/5 space-y-2">
-      <div class="flex items-center gap-3 px-4 py-4 rounded-xl bg-white/5">
+      <div class="flex items-center gap-3 px-4 py-3 rounded-xl bg-white/5">
         <div class="min-w-0 flex-1">
-          <p id="current-hospital" class="text-base font-bold text-white leading-tight break-words whitespace-normal">-</p>
-          <p class="text-sm text-emerald-400 mt-1 flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-emerald-400"></span> ออนไลน์</p>
+          <p id="current-hospital" class="text-xs sm:text-sm font-bold text-white leading-tight break-words whitespace-normal">-</p>
+          <p class="text-xs text-emerald-400 mt-1 flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-emerald-400"></span> ออนไลน์</p>
         </div>
         <button id="btn-logout" title="ออกจากระบบ" class="text-slate-400 hover:text-rose-400 transition p-2 shrink-0">
-          <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 8H6a2 2 0 01-2-2V6a2 2 0 012-2h7"/></svg>
+          <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 8H6a2 2 0 01-2-2V6a2 2 0 012-2h7"/></svg>
         </button>
       </div>
     </div>
@@ -168,43 +178,54 @@ tailwind.config = {
   <!-- Main Content -->
   <main class="flex-1 min-w-0">
     <header class="sticky top-0 z-20 bg-white/80 backdrop-blur-xl border-b border-slate-200">
-      <div class="px-6 h-20 flex items-center gap-3">
-        <div>
-          <h1 id="page-title" class="text-2xl font-bold tracking-tight">ผู้ป่วยเข้า</h1>
-          <p class="text-sm text-slate-500 hidden sm:block">รายการส่งต่อภาพ DICOM ทั้งหมดของหน่วยงาน</p>
+      <div class="px-4 sm:px-6 h-16 sm:h-20 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <!-- ปุ่มเปิดเมนู Hamburger บนจอมือถือ/จอย่อ -->
+          <button id="btn-open-sidebar" class="p-2 -ml-2 rounded-xl text-slate-700 hover:bg-slate-100 lg:hidden">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/></svg>
+          </button>
+          <div>
+            <h1 id="page-title" class="text-xl sm:text-2xl font-bold tracking-tight">ผู้ป่วยเข้า</h1>
+            <p class="text-xs sm:text-sm text-slate-500 hidden sm:block">รายการส่งต่อภาพ DICOM ทั้งหมดของหน่วยงาน</p>
+          </div>
         </div>
+        <!-- ปุ่มลัดส่งต่อใหม่บนมือถือ -->
+        <button onclick="document.getElementById('btn-open-upload').click()" class="sm:hidden px-3 py-1.5 rounded-lg bg-brand-600 text-white text-xs font-semibold flex items-center gap-1">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M12 5v14m-7-7h14"/></svg>
+          ส่งต่อ
+        </button>
       </div>
     </header>
 
-    <div class="p-6 space-y-6">
-      <div class="p-6 rounded-2xl bg-white border border-slate-200 shadow-soft">
-        <div class="flex flex-col lg:flex-row lg:items-end gap-4">
+    <div class="p-4 sm:p-6 space-y-4 sm:space-y-6">
+      <div class="p-4 sm:p-6 rounded-2xl bg-white border border-slate-200 shadow-soft">
+        <div class="flex flex-col lg:flex-row lg:items-end gap-3 sm:gap-4">
           <div class="flex-1">
-            <label class="block text-sm font-semibold text-slate-500 mb-2">ค้นหา</label>
-            <input type="text" id="filter-keyword" placeholder="HN หรือชื่อผู้ป่วย" class="w-full px-4 py-3 text-base rounded-xl bg-slate-50 border border-slate-200 outline-none focus:border-brand-500 transition">
+            <label class="block text-xs sm:text-sm font-semibold text-slate-500 mb-1 sm:mb-2">ค้นหา</label>
+            <input type="text" id="filter-keyword" placeholder="HN หรือชื่อผู้ป่วย" class="w-full px-4 py-2.5 sm:py-3 text-sm sm:text-base rounded-xl bg-slate-50 border border-slate-200 outline-none focus:border-brand-500 transition">
           </div>
           <div class="flex-1">
-            <label class="block text-sm font-semibold text-slate-500 mb-2">ตั้งแต่วันที่</label>
-            <input type="date" id="filter-start" class="w-full px-4 py-3 text-base rounded-xl bg-slate-50 border border-slate-200 outline-none focus:border-brand-500 transition">
+            <label class="block text-xs sm:text-sm font-semibold text-slate-500 mb-1 sm:mb-2">ตั้งแต่วันที่</label>
+            <input type="date" id="filter-start" class="w-full px-4 py-2.5 sm:py-3 text-sm sm:text-base rounded-xl bg-slate-50 border border-slate-200 outline-none focus:border-brand-500 transition">
           </div>
           <div class="flex-1">
-            <label class="block text-sm font-semibold text-slate-500 mb-2">ถึงวันที่</label>
-            <input type="date" id="filter-end" class="w-full px-4 py-3 text-base rounded-xl bg-slate-50 border border-slate-200 outline-none focus:border-brand-500 transition">
+            <label class="block text-xs sm:text-sm font-semibold text-slate-500 mb-1 sm:mb-2">ถึงวันที่</label>
+            <input type="date" id="filter-end" class="w-full px-4 py-2.5 sm:py-3 text-sm sm:text-base rounded-xl bg-slate-50 border border-slate-200 outline-none focus:border-brand-500 transition">
           </div>
           <div class="flex gap-2">
-            <button id="btn-clear" class="px-6 py-3 rounded-xl text-base font-medium border border-slate-200 hover:bg-slate-50 transition">ล้างตัวกรอง</button>
+            <button id="btn-clear" class="w-full lg:w-auto px-5 py-2.5 sm:py-3 rounded-xl text-sm sm:text-base font-medium border border-slate-200 hover:bg-slate-50 transition">ล้างตัวกรอง</button>
           </div>
         </div>
       </div>
 
-      <!-- Table -->
+      <!-- Table Container -->
       <div class="rounded-2xl bg-white border border-slate-200 shadow-soft overflow-hidden">
-        <div class="px-6 py-5 flex items-center justify-between border-b border-slate-200">
-          <div class="flex items-center gap-3">
-            <span class="w-3 h-3 rounded-full bg-emerald-500 animate-pulse"></span>
-            <h3 class="text-lg font-bold">รายการส่งต่อ</h3>
+        <div class="px-5 py-4 flex items-center justify-between border-b border-slate-200">
+          <div class="flex items-center gap-2 sm:gap-3">
+            <span class="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-emerald-500 animate-pulse"></span>
+            <h3 class="text-base sm:text-lg font-bold">รายการส่งต่อ</h3>
           </div>
-          <span id="record-count" class="text-sm font-medium px-4 py-1.5 rounded-full bg-slate-100 text-slate-600">0 รายการ</span>
+          <span id="record-count" class="text-xs sm:text-sm font-medium px-3 sm:px-4 py-1 rounded-full bg-slate-100 text-slate-600">0 รายการ</span>
         </div>
 
         <div class="overflow-x-auto hidden md:block">
@@ -231,58 +252,58 @@ tailwind.config = {
 <!-- ═══════════ DETAIL MODAL ═══════════ -->
 <div id="detail-modal" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm p-0 sm:p-8 overflow-y-auto">
   <div class="bg-white w-full sm:max-w-6xl mx-auto sm:rounded-2xl shadow-2xl min-h-full sm:min-h-0 animate-pop overflow-hidden flex flex-col">
-    <div class="no-print px-8 py-5 flex items-center justify-between border-b border-slate-200 sticky top-0 bg-white z-10">
-      <div class="flex items-center gap-4">
-        <div class="w-12 h-12 rounded-xl bg-brand-50 text-brand-600 grid place-items-center">
-          <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h6l6 6v11a2 2 0 01-2 2z"/></svg>
+    <div class="no-print px-5 sm:px-8 py-4 sm:py-5 flex items-center justify-between border-b border-slate-200 sticky top-0 bg-white z-10">
+      <div class="flex items-center gap-3 sm:gap-4">
+        <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-brand-50 text-brand-600 grid place-items-center">
+          <svg class="w-6 h-6 sm:w-7 sm:h-7" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h6l6 6v11a2 2 0 01-2 2z"/></svg>
         </div>
-        <h3 class="font-bold text-xl">รายละเอียดการส่งต่อ</h3>
+        <h3 class="font-bold text-lg sm:text-xl">รายละเอียดการส่งต่อ</h3>
       </div>
-      <div class="flex items-center gap-3">
-        <button id="btn-print-pdf" onclick="printPdfDocument()" class="px-4 py-2.5 rounded-xl text-sm font-semibold border border-slate-200 hover:bg-slate-50 flex items-center gap-2 transition">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M6 9V3h12v6M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2M6 14h12v7H6z"/></svg>พิมพ์ผล
+      <div class="flex items-center gap-2 sm:gap-3">
+        <button id="btn-print-pdf" onclick="printPdfDocument()" class="px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-semibold border border-slate-200 hover:bg-slate-50 flex items-center gap-1.5 sm:gap-2 transition">
+          <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M6 9V3h12v6M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2M6 14h12v7H6z"/></svg>พิมพ์ผล
         </button>
-        <button id="btn-close-detail" class="w-12 h-12 rounded-xl hover:bg-slate-100 grid place-items-center transition">
-          <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M6 18L18 6M6 6l12 12"/></svg>
+        <button id="btn-close-detail" class="w-10 h-10 sm:w-12 sm:h-12 rounded-xl hover:bg-slate-100 grid place-items-center transition">
+          <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M6 18L18 6M6 6l12 12"/></svg>
         </button>
       </div>
     </div>
-    <div id="printable-area" class="p-8 space-y-6 flex-1">
-      <div class="grid sm:grid-cols-2 md:grid-cols-3 gap-4">
-        <div class="p-5 rounded-xl bg-slate-50 border border-slate-200">
-          <p class="text-sm font-semibold text-slate-500 mb-1">HN</p>
-          <p id="modal-hn" class="font-bold text-2xl">-</p>
+    <div id="printable-area" class="p-5 sm:p-8 space-y-5 sm:space-y-6 flex-1">
+      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
+        <div class="p-4 sm:p-5 rounded-xl bg-slate-50 border border-slate-200">
+          <p class="text-xs sm:text-sm font-semibold text-slate-500 mb-1">HN</p>
+          <p id="modal-hn" class="font-bold text-xl sm:text-2xl">-</p>
         </div>
-        <div class="p-5 rounded-xl bg-slate-50 border border-slate-200 sm:col-span-2">
-          <p class="text-sm font-semibold text-slate-500 mb-1">ชื่อ-นามสกุล</p>
-          <p id="modal-name" class="font-bold text-2xl">-</p>
+        <div class="p-4 sm:p-5 rounded-xl bg-slate-50 border border-slate-200 sm:col-span-2">
+          <p class="text-xs sm:text-sm font-semibold text-slate-500 mb-1">ชื่อ-นามสกุล</p>
+          <p id="modal-name" class="font-bold text-xl sm:text-2xl">-</p>
         </div>
-        <div class="p-5 rounded-xl bg-slate-50 border border-slate-200">
-          <p class="text-sm font-semibold text-slate-500 mb-1">เลขบัตรประชาชน (CID)</p>
-          <p id="modal-cid" class="font-bold text-xl">-</p>
+        <div class="p-4 sm:p-5 rounded-xl bg-slate-50 border border-slate-200">
+          <p class="text-xs sm:text-sm font-semibold text-slate-500 mb-1">เลขบัตรประชาชน (CID)</p>
+          <p id="modal-cid" class="font-bold text-lg sm:text-xl">-</p>
         </div>
-        <div class="p-5 rounded-xl bg-slate-50 border border-slate-200">
-          <p class="text-sm font-semibold text-slate-500 mb-1">โรงพยาบาลต้นทาง</p>
-          <p id="modal-sender" class="font-semibold text-xl">-</p>
+        <div class="p-4 sm:p-5 rounded-xl bg-slate-50 border border-slate-200">
+          <p class="text-xs sm:text-sm font-semibold text-slate-500 mb-1">โรงพยาบาลต้นทาง</p>
+          <p id="modal-sender" class="font-semibold text-lg sm:text-xl">-</p>
         </div>
-        <div class="p-5 rounded-xl bg-slate-50 border border-slate-200">
-          <p class="text-sm font-semibold text-slate-500 mb-1">โรงพยาบาลปลายทาง</p>
-          <p id="modal-receiver" class="font-semibold text-xl">-</p>
+        <div class="p-4 sm:p-5 rounded-xl bg-slate-50 border border-slate-200">
+          <p class="text-xs sm:text-sm font-semibold text-slate-500 mb-1">โรงพยาบาลปลายทาง</p>
+          <p id="modal-receiver" class="font-semibold text-lg sm:text-xl">-</p>
         </div>
       </div>
-      <div class="no-print flex flex-wrap gap-3">
-        <a id="modal-zip-link" href="#" target="_blank" class="flex-1 min-w-[200px] px-6 py-4 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-base font-semibold flex items-center justify-center gap-2 transition">
+      <div class="no-print flex flex-col sm:flex-row gap-3">
+        <a id="modal-zip-link" href="#" target="_blank" class="flex-1 px-5 py-3.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-sm sm:text-base font-semibold flex items-center justify-center gap-2 transition text-center">
           ดาวน์โหลดไฟล์ภาพ (DICOM)
         </a>
-        <a id="modal-pdf-download" href="#" target="_blank" class="flex-1 min-w-[200px] px-6 py-4 rounded-xl border border-slate-200 hover:bg-slate-50 text-base font-semibold flex items-center justify-center gap-2 transition">
+        <a id="modal-pdf-download" href="#" target="_blank" class="flex-1 px-5 py-3.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-sm sm:text-base font-semibold flex items-center justify-center gap-2 transition text-center">
           ดาวน์โหลดผลอ่าน (Report)
         </a>
       </div>
       <div id="pdf-viewer-container" class="rounded-xl overflow-hidden border border-slate-200 bg-slate-100">
-        <iframe id="modal-pdf-viewer" class="w-full h-[65vh] sm:h-[700px]" frameborder="0"></iframe>
+        <iframe id="modal-pdf-viewer" class="w-full h-[55vh] sm:h-[700px]" frameborder="0"></iframe>
       </div>
-      <div id="no-pdf-message" class="hidden rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 p-12 text-center">
-         <p class="text-slate-500 text-lg font-semibold">เคสนี้ยังไม่มีการแนบไฟล์ผลอ่าน (Report)</p>
+      <div id="no-pdf-message" class="hidden rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 p-8 sm:p-12 text-center">
+         <p class="text-slate-500 text-base sm:text-lg font-semibold">เคสนี้ยังไม่มีการแนบไฟล์ผลอ่าน (Report)</p>
       </div>
     </div>
   </div>
@@ -291,41 +312,41 @@ tailwind.config = {
 <!-- ═══════════ UPLOAD MODAL ═══════════ -->
 <div id="upload-modal" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm p-0 sm:p-8 overflow-y-auto">
   <div class="bg-white w-full sm:max-w-2xl mx-auto sm:rounded-2xl shadow-2xl min-h-full sm:min-h-0 animate-pop">
-    <div class="px-8 py-5 flex items-center justify-between border-b border-slate-200 sticky top-0 bg-white z-10">
+    <div class="px-5 sm:px-8 py-4 sm:py-5 flex items-center justify-between border-b border-slate-200 sticky top-0 bg-white z-10">
       <div>
-        <h3 class="font-bold text-xl">ส่งต่อผู้ป่วยใหม่</h3>
-        <p class="text-sm text-slate-500">กรอกข้อมูลและเลือกแนบไฟล์อย่างน้อย 1 รายการ</p>
+        <h3 class="font-bold text-lg sm:text-xl">ส่งต่อผู้ป่วยใหม่</h3>
+        <p class="text-xs sm:text-sm text-slate-500">กรอกข้อมูลและเลือกแนบไฟล์อย่างน้อย 1 รายการ</p>
       </div>
-      <button id="btn-close-upload" class="w-12 h-12 rounded-xl hover:bg-slate-100 grid place-items-center transition">
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M6 18L18 6M6 6l12 12"/></svg>
+      <button id="btn-close-upload" class="w-10 h-10 sm:w-12 sm:h-12 rounded-xl hover:bg-slate-100 grid place-items-center transition">
+        <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M6 18L18 6M6 6l12 12"/></svg>
       </button>
     </div>
-    <form id="upload-form" class="p-8 space-y-5">
-      <div class="grid sm:grid-cols-2 gap-5">
+    <form id="upload-form" class="p-5 sm:p-8 space-y-4 sm:space-y-5">
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
         <div>
-          <label class="block text-sm font-semibold mb-2 flex items-center justify-between">
+          <label class="block text-xs sm:text-sm font-semibold mb-1 sm:mb-2 flex items-center justify-between">
             <span>HN <span class="text-rose-500">*</span></span>
             <span id="hn-search-status" class="text-xs font-medium text-slate-400"></span>
           </label>
-          <input id="upload-hn" type="text" required autocomplete="off" placeholder="กรอก HN (กด Enter เพื่อค้นหา)" class="w-full px-4 py-3 text-base rounded-xl bg-slate-50 border border-slate-200 outline-none focus:border-brand-500 transition">
+          <input id="upload-hn" type="text" required autocomplete="off" placeholder="กรอก HN (กด Enter เพื่อค้นหา)" class="w-full px-4 py-2.5 sm:py-3 text-sm sm:text-base rounded-xl bg-slate-50 border border-slate-200 outline-none focus:border-brand-500 transition">
         </div>
         <div>
-          <label class="block text-sm font-semibold mb-2">ชื่อ-นามสกุล <span class="text-rose-500">*</span></label>
-          <input id="upload-name" type="text" required placeholder="ระบบจะดึงชื่อให้อัตโนมัติ" class="w-full px-4 py-3 text-base rounded-xl bg-slate-50 border border-slate-200 outline-none focus:border-brand-500 transition">
+          <label class="block text-xs sm:text-sm font-semibold mb-1 sm:mb-2">ชื่อ-นามสกุล <span class="text-rose-500">*</span></label>
+          <input id="upload-name" type="text" required placeholder="ระบบจะดึงชื่อให้อัตโนมัติ" class="w-full px-4 py-2.5 sm:py-3 text-sm sm:text-base rounded-xl bg-slate-50 border border-slate-200 outline-none focus:border-brand-500 transition">
         </div>
         <div>
-          <label class="block text-sm font-semibold mb-2">เลขบัตรประชาชน (CID) <span class="text-rose-500">*</span></label>
-          <input id="upload-cid" type="text" required maxlength="13" pattern="\d{13}" placeholder="ตัวเลข 13 หลักติดกัน" class="w-full px-4 py-3 text-base rounded-xl bg-slate-50 border border-slate-200 outline-none focus:border-brand-500 transition">
+          <label class="block text-xs sm:text-sm font-semibold mb-1 sm:mb-2">เลขบัตรประชาชน (CID) <span class="text-rose-500">*</span></label>
+          <input id="upload-cid" type="text" required maxlength="13" pattern="\d{13}" placeholder="ตัวเลข 13 หลักติดกัน" class="w-full px-4 py-2.5 sm:py-3 text-sm sm:text-base rounded-xl bg-slate-50 border border-slate-200 outline-none focus:border-brand-500 transition">
         </div>
         <div>
-          <label class="block text-sm font-semibold mb-2">โรงพยาบาลปลายทาง <span class="text-rose-500">*</span></label>
-          <select id="upload-receiver" required class="w-full px-4 py-3 text-base rounded-xl bg-slate-50 border border-slate-200 outline-none focus:border-brand-500 transition">
+          <label class="block text-xs sm:text-sm font-semibold mb-1 sm:mb-2">โรงพยาบาลปลายทาง <span class="text-rose-500">*</span></label>
+          <select id="upload-receiver" required class="w-full px-4 py-2.5 sm:py-3 text-sm sm:text-base rounded-xl bg-slate-50 border border-slate-200 outline-none focus:border-brand-500 transition">
             <option value="">— กำลังโหลดรายชื่อ —</option>
           </select>
         </div>
-        <div>
-          <label class="block text-sm font-semibold mb-2">ระยะเวลาแสดงข้อมูล <span class="text-rose-500">*</span></label>
-          <select id="upload-expire" required class="w-full px-4 py-3 text-base rounded-xl bg-slate-50 border border-slate-200 outline-none focus:border-brand-500 transition">
+        <div class="sm:col-span-2">
+          <label class="block text-xs sm:text-sm font-semibold mb-1 sm:mb-2">ระยะเวลาแสดงข้อมูล <span class="text-rose-500">*</span></label>
+          <select id="upload-expire" required class="w-full px-4 py-2.5 sm:py-3 text-sm sm:text-base rounded-xl bg-slate-50 border border-slate-200 outline-none focus:border-brand-500 transition">
             <option value="1">1 วัน</option>
             <option value="3">3 วัน</option>
             <option value="7">7 วัน</option>
@@ -335,34 +356,34 @@ tailwind.config = {
         </div>
       </div>
       <div>
-        <label class="block text-sm font-semibold mb-2 flex justify-between items-end">
+        <label class="block text-xs sm:text-sm font-semibold mb-1 sm:mb-2 flex justify-between items-end">
             <span>1. แนบไฟล์ผลอ่าน (Report)</span>
-            <span id="upload-pdf-size" class="text-sm text-brand-600 font-bold bg-brand-50 px-2 py-0.5 rounded"></span>
+            <span id="upload-pdf-size" class="text-xs sm:text-sm text-brand-600 font-bold bg-brand-50 px-2 py-0.5 rounded"></span>
         </label>
-        <input type="file" id="upload-pdf" accept=".pdf" class="w-full text-base p-3 border border-slate-200 rounded-xl mb-5">
+        <input type="file" id="upload-pdf" accept=".pdf" class="w-full text-xs sm:text-base p-2.5 sm:p-3 border border-slate-200 rounded-xl mb-4">
         
-        <label class="block text-sm font-semibold mb-2 flex justify-between items-end">
+        <label class="block text-xs sm:text-sm font-semibold mb-1 sm:mb-2 flex justify-between items-end">
             <span>2. แนบไฟล์ภาพ (DICOM)</span>
-            <span id="upload-zip-size" class="text-sm text-brand-600 font-bold bg-brand-50 px-2 py-0.5 rounded"></span>
+            <span id="upload-zip-size" class="text-xs sm:text-sm text-brand-600 font-bold bg-brand-50 px-2 py-0.5 rounded"></span>
         </label>
-        <input type="file" id="upload-zip" accept=".zip,.rar" class="w-full text-base p-3 border border-slate-200 rounded-xl">
-        <p class="text-sm text-slate-500 mt-2">* สามารถเลือกแนบอย่างใดอย่างหนึ่งก่อนได้ และเพิ่มในภายหลัง</p>
+        <input type="file" id="upload-zip" accept=".zip,.rar" class="w-full text-xs sm:text-base p-2.5 sm:p-3 border border-slate-200 rounded-xl">
+        <p class="text-xs sm:text-sm text-slate-500 mt-2">* สามารถเลือกแนบอย่างใดอย่างหนึ่งก่อนได้ และเพิ่มในภายหลัง</p>
       </div>
-      <div id="upload-progress-container" class="hidden p-5 rounded-xl bg-brand-50 border border-brand-200">
+      <div id="upload-progress-container" class="hidden p-4 sm:p-5 rounded-xl bg-brand-50 border border-brand-200">
         <div class="flex items-center gap-3 mb-3">
           <svg class="animate-spin h-5 w-5 text-brand-600 shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
           </svg>
-          <p id="upload-progress-text" class="text-sm font-semibold text-brand-800 truncate">กำลังเตรียมข้อมูล...</p>
+          <p id="upload-progress-text" class="text-xs sm:text-sm font-semibold text-brand-800 truncate">กำลังเตรียมข้อมูล...</p>
         </div>
-        <div class="h-3 rounded-full bg-brand-200/60 overflow-hidden">
+        <div class="h-2.5 sm:h-3 rounded-full bg-brand-200/60 overflow-hidden">
           <div id="upload-progress-bar" class="h-full w-0 rounded-full bg-brand-500 transition-all duration-300"></div>
         </div>
       </div>
       <div class="flex gap-3 pt-2">
-        <button type="button" id="btn-cancel-upload" class="px-6 py-4 rounded-xl text-base font-semibold border border-slate-200 hover:bg-slate-50 transition">ยกเลิก</button>
-        <button id="btn-submit" type="submit" class="flex-1 px-6 py-4 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-base font-semibold transition">
+        <button type="button" id="btn-cancel-upload" class="px-5 sm:px-6 py-3 sm:py-4 rounded-xl text-sm sm:text-base font-semibold border border-slate-200 hover:bg-slate-50 transition">ยกเลิก</button>
+        <button id="btn-submit" type="submit" class="flex-1 px-5 sm:px-6 py-3 sm:py-4 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-sm sm:text-base font-semibold transition">
           อัปโหลดและส่งต่อ
         </button>
       </div>
@@ -373,49 +394,49 @@ tailwind.config = {
 <!-- ═══════════ APPEND MODAL (แนบไฟล์เพิ่ม) ═══════════ -->
 <div id="append-modal" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm p-0 sm:p-8 overflow-y-auto">
   <div class="bg-white w-full sm:max-w-xl mx-auto sm:rounded-2xl shadow-2xl min-h-full sm:min-h-0 animate-pop">
-    <div class="px-8 py-5 flex items-center justify-between border-b border-slate-200 sticky top-0 bg-white z-10">
+    <div class="px-5 sm:px-8 py-4 sm:py-5 flex items-center justify-between border-b border-slate-200 sticky top-0 bg-white z-10">
       <div>
-        <h3 class="font-bold text-xl">แนบไฟล์เพิ่มเติม</h3>
-        <p id="append-subtitle" class="text-sm text-slate-500">HN: -</p>
+        <h3 class="font-bold text-lg sm:text-xl">แนบไฟล์เพิ่มเติม</h3>
+        <p id="append-subtitle" class="text-xs sm:text-sm text-slate-500">HN: -</p>
       </div>
-      <button id="btn-close-append" class="w-12 h-12 rounded-xl hover:bg-slate-100 grid place-items-center transition">
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M6 18L18 6M6 6l12 12"/></svg>
+      <button id="btn-close-append" class="w-10 h-10 sm:w-12 sm:h-12 rounded-xl hover:bg-slate-100 grid place-items-center transition">
+        <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M6 18L18 6M6 6l12 12"/></svg>
       </button>
     </div>
-    <form id="append-form" class="p-8 space-y-5">
+    <form id="append-form" class="p-5 sm:p-8 space-y-4 sm:space-y-5">
       <input type="hidden" id="append-doc-id">
       
       <div id="append-pdf-group" class="hidden">
-        <label class="block text-sm font-semibold mb-2 text-blue-700 flex justify-between items-end">
+        <label class="block text-xs sm:text-sm font-semibold mb-1 sm:mb-2 text-blue-700 flex justify-between items-end">
             <span>แนบไฟล์ผลอ่าน (Report) ที่ขาดหาย</span>
-            <span id="append-pdf-size" class="text-sm text-blue-700 font-bold bg-blue-100 px-2 py-0.5 rounded"></span>
+            <span id="append-pdf-size" class="text-xs sm:text-sm text-blue-700 font-bold bg-blue-100 px-2 py-0.5 rounded"></span>
         </label>
-        <input type="file" id="append-pdf" accept=".pdf" class="w-full text-base p-3 border border-blue-200 bg-blue-50/50 rounded-xl">
+        <input type="file" id="append-pdf" accept=".pdf" class="w-full text-xs sm:text-base p-2.5 sm:p-3 border border-blue-200 bg-blue-50/50 rounded-xl">
       </div>
       
       <div id="append-zip-group" class="hidden">
-        <label class="block text-sm font-semibold mb-2 text-purple-700 flex justify-between items-end">
+        <label class="block text-xs sm:text-sm font-semibold mb-1 sm:mb-2 text-purple-700 flex justify-between items-end">
             <span>แนบไฟล์ภาพ (DICOM) ที่ขาดหาย</span>
-            <span id="append-zip-size" class="text-sm text-purple-700 font-bold bg-purple-100 px-2 py-0.5 rounded"></span>
+            <span id="append-zip-size" class="text-xs sm:text-sm text-purple-700 font-bold bg-purple-100 px-2 py-0.5 rounded"></span>
         </label>
-        <input type="file" id="append-zip" accept=".zip,.rar" class="w-full text-base p-3 border border-purple-200 bg-purple-50/50 rounded-xl">
+        <input type="file" id="append-zip" accept=".zip,.rar" class="w-full text-xs sm:text-base p-2.5 sm:p-3 border border-purple-200 bg-purple-50/50 rounded-xl">
       </div>
       
-      <div id="append-progress-container" class="hidden p-5 rounded-xl bg-brand-50 border border-brand-200">
+      <div id="append-progress-container" class="hidden p-4 sm:p-5 rounded-xl bg-brand-50 border border-brand-200">
         <div class="flex items-center gap-3 mb-3">
           <svg class="animate-spin h-5 w-5 text-brand-600 shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
           </svg>
-          <p id="append-progress-text" class="text-sm font-semibold text-brand-800 truncate">กำลังอัปโหลด...</p>
+          <p id="append-progress-text" class="text-xs sm:text-sm font-semibold text-brand-800 truncate">กำลังอัปโหลด...</p>
         </div>
-        <div class="h-3 rounded-full bg-brand-200/60 overflow-hidden">
+        <div class="h-2.5 sm:h-3 rounded-full bg-brand-200/60 overflow-hidden">
           <div id="append-progress-bar" class="h-full w-0 rounded-full bg-brand-500 transition-all duration-300"></div>
         </div>
       </div>
-      <div class="flex gap-3 pt-4">
-        <button type="button" id="btn-cancel-append" class="px-6 py-4 rounded-xl text-base font-semibold border border-slate-200 hover:bg-slate-50 transition">ยกเลิก</button>
-        <button id="btn-submit-append" type="submit" class="flex-1 px-6 py-4 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-base font-semibold transition">
+      <div class="flex gap-3 pt-3">
+        <button type="button" id="btn-cancel-append" class="px-5 sm:px-6 py-3 sm:py-4 rounded-xl text-sm sm:text-base font-semibold border border-slate-200 hover:bg-slate-50 transition">ยกเลิก</button>
+        <button id="btn-submit-append" type="submit" class="flex-1 px-5 sm:px-6 py-3 sm:py-4 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-sm sm:text-base font-semibold transition">
           อัปโหลดไฟล์เพิ่ม
         </button>
       </div>
@@ -430,6 +451,28 @@ tailwind.config = {
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
 
 <script>
+// ==========================================
+// ควบคุม Mobile Sidebar (Hamburger Menu & Drawer)
+// ==========================================
+const sidebar = document.getElementById('sidebar');
+const sidebarBackdrop = document.getElementById('sidebar-backdrop');
+const btnOpenSidebar = document.getElementById('btn-open-sidebar');
+const btnCloseSidebar = document.getElementById('btn-close-sidebar');
+
+function openSidebar() {
+    sidebar.classList.remove('-translate-x-full');
+    sidebarBackdrop.classList.remove('hidden');
+}
+
+function closeSidebar() {
+    sidebar.classList.add('-translate-x-full');
+    sidebarBackdrop.classList.add('hidden');
+}
+
+if (btnOpenSidebar) btnOpenSidebar.addEventListener('click', openSidebar);
+if (btnCloseSidebar) btnCloseSidebar.addEventListener('click', closeSidebar);
+if (sidebarBackdrop) sidebarBackdrop.addEventListener('click', closeSidebar);
+
 // ==========================================
 // ฟังก์ชันจัดการชื่อไฟล์ (ตั้งชื่อเป็น CID.YYYYMMDD.HHMMSS)
 // ==========================================
@@ -470,6 +513,8 @@ const firebaseConfig = {
     appId: "1:1013234791188:web:f169e4602dbf4735e40801",
     measurementId: "G-304XVHFND5"
 };
+
+// 🔴 อัปเดต URL ของ Google Apps Script ใหม่
 const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwDBd2i6QbW4A_8NiHPI_zt6w-l_ZQHgrmIX99aEaIdOCjx_FYUxweWBN3JFr-gjCWgDA/exec"; 
 const MAX_GAS_SIZE = 100 * 1024 * 1024; // 100 MB Limit
 
@@ -490,7 +535,7 @@ const requestDb = window.indexedDB.open("PatientDB_V2", 1);
 requestDb.onupgradeneeded = function(event) {
     localDb = event.target.result;
     if (!localDb.objectStoreNames.contains("patients")) {
-        localDb.createObjectStore("patients", { keyPath: "id" }); // ใช้ id (email_hn)
+        localDb.createObjectStore("patients", { keyPath: "id" });
     }
 };
 requestDb.onsuccess = function(event) { localDb = event.target.result; };
@@ -499,7 +544,10 @@ requestDb.onerror = function(event) { console.error("IndexedDB error:", event.ta
 const btnImportDb = document.getElementById('btn-import-db');
 const csvFileInput = document.getElementById('csv-file-input');
 if (btnImportDb && csvFileInput) {
-    btnImportDb.addEventListener('click', () => csvFileInput.click());
+    btnImportDb.addEventListener('click', () => {
+        closeSidebar();
+        csvFileInput.click();
+    });
     
     csvFileInput.addEventListener('change', function(e) {
         const file = e.target.files[0];
@@ -515,7 +563,7 @@ if (btnImportDb && csvFileInput) {
                 const transaction = localDb.transaction(["patients"], "readwrite");
                 const store = transaction.objectStore("patients");
                 let count = 0;
-                const myEmail = auth.currentUser.email; // อีเมล รพ. ปัจจุบัน
+                const myEmail = auth.currentUser.email;
                 
                 results.data.forEach(row => {
                     const keys = Object.keys(row).map(k => k.toLowerCase());
@@ -542,7 +590,6 @@ if (btnImportDb && csvFileInput) {
                         }
 
                         if (fullName) {
-                            // เซฟโดยใช้ id เป็น email_HN เพื่อแยกข้อมูลระหว่างโรงพยาบาล
                             store.put({ 
                                 id: `${myEmail}_${hnVal}`, 
                                 hn: hnVal, 
@@ -586,7 +633,7 @@ if (inputUploadHn) {
         inputUploadCid.value = "";
         let found = false;
 
-        // ชั้นที่ 1: ค้นหาจาก IndexedDB โดยใช้ กุญแจเฉพาะ รพ.
+        // ชั้นที่ 1: ค้นหาจาก IndexedDB
         if (localDb && !found) {
             try {
                 const myEmail = auth.currentUser.email;
@@ -610,7 +657,7 @@ if (inputUploadHn) {
             } catch (err) { console.log("IndexedDB search error:", err); }
         }
 
-        // ชั้นที่ 2: วิ่งไปถาม HOSxP (Local API)
+        // ชั้นที่ 2: ถาม HOSxP (Local API)
         if (!found) {
             try {
                 statusUploadHn.innerText = "กำลังค้นหาคนไข้ใหม่จาก HOSxP...";
@@ -632,7 +679,6 @@ if (inputUploadHn) {
                     statusUploadHn.className = "text-xs font-bold text-blue-500";
                     found = true;
 
-                    // บันทึกคนไข้ใหม่(และ CID) กลับลงไปใน IndexedDB แบบระบุอีเมล
                     if (localDb) {
                         const myEmail = auth.currentUser.email;
                         const tx = localDb.transaction(["patients"], "readwrite");
@@ -696,7 +742,6 @@ async function loadHospitals() {
             const data = doc.data();
             hospitalMap[data.email] = data.name;
             
-            // 🔴 เงื่อนไข: ถ้าอีเมลตรงกับคนที่ล็อกอินอยู่ ให้ข้ามไปไม่ต้องสร้างตัวเลือก
             if (auth.currentUser && data.email === auth.currentUser.email) return;
 
             const option = document.createElement('option');
@@ -760,7 +805,7 @@ setInterval(() => {
         const expireTime = parseInt(el.getAttribute('data-expire'));
         const diffMs = expireTime - new Date().getTime();
         if (diffMs <= 0) {
-            el.outerHTML = `<span class="inline-block mt-1.5 text-sm font-bold px-2.5 py-1 rounded-md bg-rose-100 text-rose-700 border border-rose-200">หมดอายุ</span>`;
+            el.outerHTML = `<span class="inline-block mt-1 text-xs sm:text-sm font-bold px-2 py-0.5 rounded-md bg-rose-100 text-rose-700 border border-rose-200">หมดอายุ</span>`;
         } else {
             const diffHrs = Math.floor(diffMs / (1000 * 60 * 60));
             const diffMins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
@@ -779,12 +824,13 @@ function switchTab(tabName) {
     document.getElementById('page-title').innerText = tabName === 'inbox' ? 'ผู้ป่วยเข้า' : 'ผู้ป่วยออก';
 
     if (tabName === 'inbox') {
-        tabIn.className = "w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-base font-medium transition bg-brand-500/15 text-brand-300 ring-1 ring-brand-500/30";
-        tabOut.className = "w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-base font-medium transition hover:bg-white/5 text-slate-400";
+        tabIn.className = "w-full flex items-center gap-3 px-4 py-3 sm:py-3.5 rounded-xl text-sm sm:text-base font-medium transition bg-brand-500/15 text-brand-300 ring-1 ring-brand-500/30";
+        tabOut.className = "w-full flex items-center gap-3 px-4 py-3 sm:py-3.5 rounded-xl text-sm sm:text-base font-medium transition hover:bg-white/5 text-slate-400";
     } else {
-        tabOut.className = "w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-base font-medium transition bg-brand-500/15 text-brand-300 ring-1 ring-brand-500/30";
-        tabIn.className = "w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-base font-medium transition hover:bg-white/5 text-slate-400";
+        tabOut.className = "w-full flex items-center gap-3 px-4 py-3 sm:py-3.5 rounded-xl text-sm sm:text-base font-medium transition bg-brand-500/15 text-brand-300 ring-1 ring-brand-500/30";
+        tabIn.className = "w-full flex items-center gap-3 px-4 py-3 sm:py-3.5 rounded-xl text-sm sm:text-base font-medium transition hover:bg-white/5 text-slate-400";
     }
+    closeSidebar();
     renderTable();
 }
 
@@ -833,35 +879,35 @@ function renderTable() {
 
         let expireBadge = '';
         if (diffMs <= 0) {
-            expireBadge = `<span class="inline-block mt-1.5 text-sm font-bold px-2.5 py-1 rounded-md bg-rose-100 text-rose-700 border border-rose-200">หมดอายุ</span>`;
+            expireBadge = `<span class="inline-block mt-1 text-xs sm:text-sm font-bold px-2 py-0.5 rounded-md bg-rose-100 text-rose-700 border border-rose-200">หมดอายุ</span>`;
         } else {
             const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
             if (diffDays >= 1) {
-                expireBadge = `<span class="inline-block mt-1.5 text-sm font-bold px-2.5 py-1 rounded-md bg-amber-100 text-amber-700 border border-amber-200">เหลือ ${diffDays} วัน</span>`;
+                expireBadge = `<span class="inline-block mt-1 text-xs sm:text-sm font-bold px-2 py-0.5 rounded-md bg-amber-100 text-amber-700 border border-amber-200">เหลือ ${diffDays} วัน</span>`;
             } else {
                 const diffHrs = Math.floor(diffMs / (1000 * 60 * 60));
                 const diffMins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
                 const hh = String(diffHrs).padStart(2, '0');
                 const mm = String(diffMins).padStart(2, '0');
-                expireBadge = `<span class="countdown-timer inline-block mt-1.5 text-sm font-bold px-2.5 py-1 rounded-md bg-orange-100 text-orange-700 border border-orange-200" data-expire="${expireDate.getTime()}">เหลือ ${hh}:${mm} ชม.</span>`;
+                expireBadge = `<span class="countdown-timer inline-block mt-1 text-xs sm:text-sm font-bold px-2 py-0.5 rounded-md bg-orange-100 text-orange-700 border border-orange-200" data-expire="${expireDate.getTime()}">เหลือ ${hh}:${mm} ชม.</span>`;
             }
         }
 
         const hasPdf = !!data.pdfFileUrl;
         const hasZip = !!data.zipFileUrl;
-        let fileBadges = `<div class="mt-1.5 flex gap-1.5">`;
-        if (hasPdf) fileBadges += `<span class="px-2 py-0.5 text-sm rounded bg-blue-100 text-blue-700 font-bold border border-blue-200">📄 Report</span>`;
-        if (hasZip) fileBadges += `<span class="px-2 py-0.5 text-sm rounded bg-purple-100 text-purple-700 font-bold border border-purple-200">📦 DICOM</span>`;
-        if (!hasPdf && !hasZip) fileBadges += `<span class="px-2 py-0.5 text-sm rounded bg-slate-100 text-slate-500 font-bold border border-slate-200">ยังไม่มีไฟล์</span>`;
+        let fileBadges = `<div class="mt-1 flex flex-wrap gap-1.5">`;
+        if (hasPdf) fileBadges += `<span class="px-2 py-0.5 text-xs sm:text-sm rounded bg-blue-100 text-blue-700 font-bold border border-blue-200">📄 Report</span>`;
+        if (hasZip) fileBadges += `<span class="px-2 py-0.5 text-xs sm:text-sm rounded bg-purple-100 text-purple-700 font-bold border border-purple-200">📦 DICOM</span>`;
+        if (!hasPdf && !hasZip) fileBadges += `<span class="px-2 py-0.5 text-xs sm:text-sm rounded bg-slate-100 text-slate-500 font-bold border border-slate-200">ยังไม่มีไฟล์</span>`;
         fileBadges += `</div>`;
 
-        let actionButtons = `<button class="btn-view bg-brand-50 text-brand-600 px-4 py-2 rounded-xl text-sm font-bold hover:bg-brand-100">เปิดดู</button>`;
+        let actionButtons = `<button class="btn-view bg-brand-50 text-brand-600 px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl text-xs sm:text-sm font-bold hover:bg-brand-100">เปิดดู</button>`;
         if (!hasPdf || !hasZip) {
             if (data.senderHospital === myEmail) {
-                actionButtons += `<button class="btn-append bg-amber-50 text-amber-600 px-4 py-2 rounded-xl text-sm font-bold hover:bg-amber-100 ml-2">แนบไฟล์เพิ่ม</button>`;
+                actionButtons += `<button class="btn-append bg-amber-50 text-amber-600 px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl text-xs sm:text-sm font-bold hover:bg-amber-100 ml-2">แนบไฟล์เพิ่ม</button>`;
             }
         }
-        actionButtons += `<button class="btn-del bg-rose-50 text-rose-600 px-4 py-2 rounded-xl text-sm font-bold hover:bg-rose-100 ml-2">ลบ</button>`;
+        actionButtons += `<button class="btn-del bg-rose-50 text-rose-600 px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl text-xs sm:text-sm font-bold hover:bg-rose-100 ml-2">ลบ</button>`;
 
         const maskedCid = data.cid ? getMaskedCID(data.cid) : '-';
 
@@ -886,21 +932,21 @@ function renderTable() {
 
         if (listMobileEl) {
             const mRow = document.createElement('div');
-            mRow.className = "p-5 space-y-3 border-b";
+            mRow.className = "p-4 space-y-2.5 border-b border-slate-100";
             mRow.innerHTML = `
-                <div class="flex items-start justify-between gap-3">
+                <div class="flex items-start justify-between gap-2">
                     <div>
-                        <p class="font-bold text-lg">${data.patientName}</p>
-                        <p class="text-sm text-slate-500 font-mono mt-1">HN ${data.hn} | 💳 ${maskedCid}</p>
+                        <p class="font-bold text-base text-slate-800">${data.patientName}</p>
+                        <p class="text-xs text-slate-500 font-mono mt-0.5">HN ${data.hn} | 💳 ${maskedCid}</p>
                         ${fileBadges}
                     </div>
                     ${expireBadge}
                 </div>
-                <p class="text-sm text-slate-500">${hospitalCol} · ${dateStr} น.</p>
-                <div class="flex flex-wrap gap-2 pt-2">
-                    <button class="btn-view-m flex-1 min-w-[120px] py-3 rounded-xl text-sm font-bold bg-brand-600 text-white">เปิดดู</button>
-                    ${(!hasPdf || !hasZip) && data.senderHospital === myEmail ? `<button class="btn-append-m flex-1 min-w-[120px] py-3 rounded-xl text-sm font-bold bg-amber-100 text-amber-700">แนบไฟล์เพิ่ม</button>` : ''}
-                    <button class="btn-del-m px-5 py-3 rounded-xl text-sm font-bold border border-rose-200 text-rose-600">ลบ</button>
+                <p class="text-xs text-slate-500">${hospitalCol} · ${dateStr} น.</p>
+                <div class="flex gap-2 pt-1">
+                    <button class="btn-view-m flex-1 py-2 rounded-xl text-xs sm:text-sm font-bold bg-brand-600 text-white shadow-sm">เปิดดู</button>
+                    ${(!hasPdf || !hasZip) && data.senderHospital === myEmail ? `<button class="btn-append-m flex-1 py-2 rounded-xl text-xs sm:text-sm font-bold bg-amber-100 text-amber-700">แนบเพิ่ม</button>` : ''}
+                    <button class="btn-del-m px-3 py-2 rounded-xl text-xs sm:text-sm font-bold border border-rose-200 text-rose-600">ลบ</button>
                 </div>`;
             mRow.querySelector('.btn-view-m').addEventListener('click', () => openDetailModal(data));
             mRow.querySelector('.btn-del-m').addEventListener('click', () => deleteReferral(data));
@@ -967,12 +1013,9 @@ function printPdfDocument() {
     const iframe = document.getElementById('modal-pdf-viewer');
     if (iframe && iframe.src) {
         let openUrl = iframe.src;
-        
-        // หากเป็นลิงก์ Google Drive ให้เปลี่ยนจากโหมด preview เป็นโหมด view ธรรมดา
         if (openUrl.includes('drive.google.com') && openUrl.includes('/preview')) {
             openUrl = openUrl.replace('/preview', '/view');
         }
-        
         window.open(openUrl, '_blank');
     }
 }
@@ -1044,6 +1087,7 @@ setupFileSizeListener('append-zip', 'append-zip-size');
 const btnOpenUpload = document.getElementById('btn-open-upload');
 if (btnOpenUpload) {
     btnOpenUpload.addEventListener('click', () => {
+        closeSidebar();
         document.getElementById('upload-pdf-size').innerText = "";
         document.getElementById('upload-zip-size').innerText = "";
         document.getElementById('hn-search-status').innerText = "";
@@ -1075,14 +1119,13 @@ function getBase64(fileBlob) {
 }
 
 // ==========================================
-// 🚀 ฟังก์ชันอัปโหลด Google Drive (อัปเกรดความเร็ว แบบ Parallel + Simple)
+// 🚀 ฟังก์ชันอัปโหลด Google Drive (Parallel + Simple Upload)
 // ==========================================
 async function uploadToGoogleDriveViaGAS(file, expireDateStr, progressTextPrefix, progressBarId, progressTextId, customFileName) {
     if (!file) return "";
     const finalName = customFileName || file.name;
     document.getElementById(progressTextId).innerText = `${progressTextPrefix} กำลังเตรียมข้อมูล...`;
 
-    // ⚡ เทคนิคที่ 1: ถ้าไฟล์เล็กกว่า 5MB ให้แปลงเป็น Base64 แล้วส่งรวดเดียว (Simple Upload)
     if (file.size <= 5 * 1024 * 1024) { 
         document.getElementById(progressBarId).style.width = '50%';
         const base64Data = await getBase64(file);
@@ -1109,12 +1152,10 @@ async function uploadToGoogleDriveViaGAS(file, expireDateStr, progressTextPrefix
             }
         } catch (err) {
             console.log("Simple upload failed, fallback to chunk...", err);
-            // ถ้า Simple พลาด จะตกไปใช้ Chunk ด้านล่างแทน
         }
     }
 
-    // 🐢 เทคนิคที่ 2: ระบบหั่นไฟล์ (สำหรับไฟล์ที่ใหญ่กว่า 5MB)
-    const chunkSize = 8 * 1024 * 1024; // ขยาย Chunk เป็น 8MB
+    const chunkSize = 8 * 1024 * 1024;
     let start = 0;
     
     const initRes = await fetch(GAS_WEB_APP_URL, { method: 'POST', body: JSON.stringify({ action: "initUpload", fileName: finalName, mimeType: file.type || "application/octet-stream", expireDate: expireDateStr }) });
@@ -1200,13 +1241,9 @@ if (uploadForm) {
             const expireDate = new Date(); expireDate.setDate(expireDate.getDate() + expireDays);
             const expireDateStr = expireDate.toISOString();
             
-            // ⚡ เทคนิคที่ 3: สั่งให้อัปโหลด PDF และ ZIP วิ่งออกไปพร้อมกัน (Parallel Upload)
-            let uploadTasks = [];
-            
-            // เตรียมงานอัปโหลด PDF
             let pdfPromise = Promise.resolve("");
             if (pdfFile) {
-                document.getElementById('upload-progress-bar').style.width = '10%'; // กราฟิกหลอกตา
+                document.getElementById('upload-progress-bar').style.width = '10%';
                 const customPdfName = generateFileName(cidVal, pdfFile);
                 if (pdfFile.size <= MAX_GAS_SIZE) {
                     pdfPromise = uploadToGoogleDriveViaGAS(pdfFile, expireDateStr, "อัปโหลดผลอ่าน:", 'upload-progress-bar', 'upload-progress-text', customPdfName);
@@ -1215,7 +1252,6 @@ if (uploadForm) {
                 }
             }
             
-            // เตรียมงานอัปโหลด ZIP
             let zipPromise = Promise.resolve("");
             if (zipFile) {
                 const customZipName = generateFileName(cidVal, zipFile);
@@ -1227,13 +1263,11 @@ if (uploadForm) {
             }
 
             document.getElementById('upload-progress-text').innerText = "กำลังนำส่งไฟล์...";
-            
-            // สั่งวิ่งออกไปพร้อมกัน แล้วรอให้ทั้งคู่เสร็จ (ประหยัดเวลาลงครึ่งนึง)
             const [finalPdfUrl, finalZipUrl] = await Promise.all([pdfPromise, zipPromise]);
 
             document.getElementById('upload-progress-bar').style.width = '100%';
-
             document.getElementById('upload-progress-text').innerText = "กำลังบันทึกข้อมูลเข้าระบบ...";
+            
             const today = new Date();
             const monthYearStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
             const senderEmail = auth.currentUser.email;
@@ -1264,9 +1298,6 @@ if (uploadForm) {
                 }, { merge: true });
             } catch (statErr) { console.log("Stats update error:", statErr); }
 
-           // ==========================================
-            // 🚨 ระบบส่งแจ้งเตือนเข้า LINE และบันทึก Log ลง Sheet (ตอนส่งใหม่)
-            // ==========================================
             document.getElementById('upload-progress-text').innerText = "กำลังส่งการแจ้งเตือน LINE และบันทึก Log...";
             const senderName = document.getElementById('current-hospital').innerText;
             const receiverSelect = document.getElementById('upload-receiver');
@@ -1290,7 +1321,6 @@ if (uploadForm) {
                     body: JSON.stringify({ action: "sendLine", message: lineMsg })
                 });
                 
-                // บันทึก Log ลง Spreadsheet
                 fetch(GAS_WEB_APP_URL, {
                     method: 'POST',
                     mode: 'no-cors',
@@ -1309,7 +1339,6 @@ if (uploadForm) {
             } catch (lineErr) {
                 console.log("LINE/Log Error: ", lineErr);
             }
-            // ==========================================
 
             alert("ส่งข้อมูลสำเร็จ!");
             document.getElementById('upload-modal').classList.add('hidden');
@@ -1328,10 +1357,10 @@ if (uploadForm) {
 
 let currentExpireDateForAppend = null;
 let currentCidForAppend = "NOCID"; 
-let currentAppendData = null; // เก็บข้อมูลชั่วคราวเพื่อส่ง LINE
+let currentAppendData = null;
 
 function openAppendModal(data) {
-    currentAppendData = data; // บันทึกไว้ใช้ตอนส่ง LINE
+    currentAppendData = data;
     document.getElementById('append-doc-id').value = data.id;
     document.getElementById('append-subtitle').innerText = `ผู้ป่วย: ${data.patientName} (HN: ${data.hn})`;
     currentExpireDateForAppend = data.expireAt ? new Date(data.expireAt.seconds * 1000).toISOString() : new Date().toISOString();
@@ -1371,7 +1400,6 @@ if (appendForm) {
         try {
             let updates = {};
             
-            // ⚡ เทคนิคที่ 3: สั่งให้อัปโหลดแนบไฟล์เพิ่ม วิ่งออกไปพร้อมกัน (Parallel Upload)
             let pdfPromise = Promise.resolve(null);
             if (pdfFile) {
                 document.getElementById('append-progress-bar').style.width = '10%';
@@ -1394,20 +1422,15 @@ if (appendForm) {
             }
 
             document.getElementById('append-progress-text').innerText = "กำลังนำส่งไฟล์...";
-            
             const [finalPdfUrl, finalZipUrl] = await Promise.all([pdfPromise, zipPromise]);
 
             if (finalPdfUrl) updates.pdfFileUrl = finalPdfUrl;
             if (finalZipUrl) updates.zipFileUrl = finalZipUrl;
 
             document.getElementById('append-progress-bar').style.width = '100%';
-
             document.getElementById('append-progress-text').innerText = "กำลังอัปเดตข้อมูลเข้าระบบ...";
             await db.collection("referrals").doc(docId).update(updates);
 
-            // ==========================================
-            // 🚨 ระบบส่งแจ้งเตือนเข้า LINE และบันทึก Log ลง Sheet (ตอนแนบเพิ่ม)
-            // ==========================================
             document.getElementById('append-progress-text').innerText = "กำลังส่งการแจ้งเตือน LINE และบันทึก Log...";
             const senderName = getHospitalDisplayName(currentAppendData.senderHospital);
             const receiverName = getHospitalDisplayName(currentAppendData.receiverHospital);
@@ -1428,7 +1451,6 @@ if (appendForm) {
                     body: JSON.stringify({ action: "sendLine", message: lineMsg })
                 });
 
-                // บันทึก Log ลง Spreadsheet
                 fetch(GAS_WEB_APP_URL, {
                     method: 'POST',
                     mode: 'no-cors',
@@ -1447,7 +1469,6 @@ if (appendForm) {
             } catch (lineErr) {
                 console.log("LINE/Log Error: ", lineErr);
             }
-            // ==========================================
 
             alert("แนบไฟล์เพิ่มสำเร็จ!");
             document.getElementById('append-modal').classList.add('hidden');
