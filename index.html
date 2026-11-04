@@ -160,16 +160,25 @@ tailwind.config = {
       </button>
       <input type="file" id="csv-file-input" accept=".csv" class="hidden">
 
-      <!-- ⚙️ ส่วนตั้งค่า Local Port API หน้าเว็บ -->
-      <div class="mt-4 p-3 rounded-xl bg-white/5 border border-white/5">
-        <label class="block text-xs font-semibold text-slate-400 mb-1.5 flex items-center gap-1.5">
-          <svg class="w-4 h-4 text-brand-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-          Port HOSxP API
-        </label>
+      <!-- ⚙️ ส่วนตั้งค่าและทดสอบ Local Port API หน้าเว็บ -->
+      <div class="mt-4 p-3.5 rounded-xl bg-white/5 border border-white/5 space-y-2">
+        <div class="flex items-center justify-between">
+          <label class="text-xs font-semibold text-slate-400 flex items-center gap-1.5">
+            <svg class="w-4 h-4 text-brand-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+            Port HOSxP API
+          </label>
+          <span id="api-status-badge" class="text-[11px] font-bold px-2 py-0.5 rounded bg-slate-800 text-slate-400">ยังไม่ตรวจ</span>
+        </div>
+
         <div class="flex gap-2">
           <input type="number" id="setting-api-port" placeholder="5000" class="w-full px-3 py-1.5 text-xs rounded-lg bg-ink-800 border border-slate-700 text-white outline-none focus:border-brand-500 font-mono">
           <button id="btn-save-port" class="px-3 py-1.5 bg-brand-600 hover:bg-brand-500 text-white rounded-lg text-xs font-semibold shrink-0">บันทึก</button>
         </div>
+
+        <button id="btn-check-port" class="w-full py-1.5 text-xs rounded-lg border border-slate-700 hover:bg-white/5 text-slate-300 font-medium transition flex items-center justify-center gap-1.5">
+          <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+          ตรวจสอบสถานะ Port
+        </button>
       </div>
     </nav>
 
@@ -273,7 +282,7 @@ tailwind.config = {
           <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M6 9V3h12v6M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2M6 14h12v7H6z"/></svg>พิมพ์ผล
         </button>
         <button id="btn-close-detail" class="w-10 h-10 sm:w-12 sm:h-12 rounded-xl hover:bg-slate-100 grid place-items-center transition">
-          <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M6 18L18 6M6 6l12 12"/></svg>
+          <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M6 18L18 6M6 6l12 12"/></svg>
         </button>
       </div>
     </div>
@@ -469,20 +478,77 @@ function getLocalApiPort() {
 
 const inputSettingPort = document.getElementById('setting-api-port');
 const btnSavePort = document.getElementById('btn-save-port');
+const btnCheckPort = document.getElementById('btn-check-port');
+const badgeStatus = document.getElementById('api-status-badge');
 
 if (inputSettingPort) {
     inputSettingPort.value = getLocalApiPort();
 }
 
-if (btnSavePort) {
-    btnSavePort.addEventListener('click', () => {
-        const portVal = inputSettingPort.value.trim();
-        if (portVal && !isNaN(portVal)) {
-            localStorage.setItem('hosxp_api_port', portVal);
-            alert(`✅ บันทึก Port API เป็น ${portVal} เรียบร้อยแล้ว`);
+async function checkApiStatus(portToTest) {
+    const port = portToTest || getLocalApiPort();
+    if (!badgeStatus) return false;
+    
+    badgeStatus.innerText = "กำลังตรวจ...";
+    badgeStatus.className = "text-[11px] font-bold px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 animate-pulse";
+
+    try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 2000);
+
+        const res = await fetch(`http://127.0.0.1:${port}/ping`, { 
+            method: 'GET',
+            signal: controller.signal 
+        });
+        clearTimeout(timeoutId);
+
+        if (res.ok) {
+            badgeStatus.innerText = "● พร้อมใช้งาน";
+            badgeStatus.className = "text-[11px] font-bold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400";
+            return true;
         } else {
-            alert('กรุณากรอกตัวเลข Port ให้ถูกต้อง');
+            throw new Error("Port not responding");
         }
+    } catch (err) {
+        badgeStatus.innerText = "● ออฟไลน์";
+        badgeStatus.className = "text-[11px] font-bold px-2 py-0.5 rounded bg-rose-500/20 text-rose-400";
+        return false;
+    }
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+    checkApiStatus();
+});
+
+if (btnCheckPort) {
+    btnCheckPort.addEventListener('click', () => {
+        checkApiStatus(inputSettingPort.value.trim());
+    });
+}
+
+if (btnSavePort) {
+    btnSavePort.addEventListener('click', async () => {
+        const portVal = inputSettingPort.value.trim();
+        if (!portVal || isNaN(portVal)) {
+            alert('กรุณากรอกตัวเลข Port ให้ถูกต้อง');
+            return;
+        }
+
+        const oldPort = getLocalApiPort();
+        localStorage.setItem('hosxp_api_port', portVal);
+
+        try {
+            await fetch(`http://127.0.0.1:${oldPort}/change-port`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ port: portVal })
+            });
+            alert(`✅ บันทึก Port ${portVal} เรียบร้อยแล้ว!\n\n⚠️ หมายเหตุ: หากโปรแกรม Python ยังรันอยู่ที่พอร์ตเดิม กรุณาปิดแล้วเปิดโปรแกรม Python ใหม่ 1 ครั้งเพื่อให้มีผลครับ`);
+        } catch (e) {
+            alert(`✅ บันทึก Port ${portVal} ในเบราว์เซอร์แล้ว\n(ไม่สามารถเชื่อมต่อ app.py ที่พอร์ตเดิมได้ กรุณาปิดและเปิด app.py ใหม่)`);
+        }
+        
+        checkApiStatus(portVal);
     });
 }
 
