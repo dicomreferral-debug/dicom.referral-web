@@ -108,7 +108,7 @@ tailwind.config = {
      DASHBOARD
 ═══════════════════════════════════════════ -->
 <section id="dashboard-section" class="hidden min-h-screen">
-<!-- Backdrop สำหรับเปิดเมนูบนมือถือ/จอย่อ -->
+<!-- Backdrop สำหรับจอมือถือ -->
 <div id="sidebar-backdrop" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-40 hidden transition-opacity duration-300 lg:hidden"></div>
 
 <div class="flex min-h-screen">
@@ -124,7 +124,6 @@ tailwind.config = {
           <p class="text-xs sm:text-sm text-slate-400">Referral System</p>
         </div>
       </div>
-      <!-- ปุ่มกากบาทปิด Sidebar บนจอมือถือ -->
       <button id="btn-close-sidebar" class="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 lg:hidden">
         <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
       </button>
@@ -160,6 +159,18 @@ tailwind.config = {
         อัปเดตฐานข้อมูล (CSV)
       </button>
       <input type="file" id="csv-file-input" accept=".csv" class="hidden">
+
+      <!-- ⚙️ ส่วนตั้งค่า Local Port API หน้าเว็บ -->
+      <div class="mt-4 p-3 rounded-xl bg-white/5 border border-white/5">
+        <label class="block text-xs font-semibold text-slate-400 mb-1.5 flex items-center gap-1.5">
+          <svg class="w-4 h-4 text-brand-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+          Port HOSxP API
+        </label>
+        <div class="flex gap-2">
+          <input type="number" id="setting-api-port" placeholder="5000" class="w-full px-3 py-1.5 text-xs rounded-lg bg-ink-800 border border-slate-700 text-white outline-none focus:border-brand-500 font-mono">
+          <button id="btn-save-port" class="px-3 py-1.5 bg-brand-600 hover:bg-brand-500 text-white rounded-lg text-xs font-semibold shrink-0">บันทึก</button>
+        </div>
+      </div>
     </nav>
 
     <div class="p-4 border-t border-white/5 space-y-2">
@@ -180,7 +191,6 @@ tailwind.config = {
     <header class="sticky top-0 z-20 bg-white/80 backdrop-blur-xl border-b border-slate-200">
       <div class="px-4 sm:px-6 h-16 sm:h-20 flex items-center justify-between">
         <div class="flex items-center gap-3">
-          <!-- ปุ่มเปิดเมนู Hamburger บนจอมือถือ/จอย่อ -->
           <button id="btn-open-sidebar" class="p-2 -ml-2 rounded-xl text-slate-700 hover:bg-slate-100 lg:hidden">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/></svg>
           </button>
@@ -189,7 +199,6 @@ tailwind.config = {
             <p class="text-xs sm:text-sm text-slate-500 hidden sm:block">รายการส่งต่อภาพ DICOM ทั้งหมดของหน่วยงาน</p>
           </div>
         </div>
-        <!-- ปุ่มลัดส่งต่อใหม่บนมือถือ -->
         <button onclick="document.getElementById('btn-open-upload').click()" class="sm:hidden px-3 py-1.5 rounded-lg bg-brand-600 text-white text-xs font-semibold flex items-center gap-1">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M12 5v14m-7-7h14"/></svg>
           ส่งต่อ
@@ -264,7 +273,7 @@ tailwind.config = {
           <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M6 9V3h12v6M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2M6 14h12v7H6z"/></svg>พิมพ์ผล
         </button>
         <button id="btn-close-detail" class="w-10 h-10 sm:w-12 sm:h-12 rounded-xl hover:bg-slate-100 grid place-items-center transition">
-          <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M6 18L18 6M6 6l12 12"/></svg>
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M6 18L18 6M6 6l12 12"/></svg>
         </button>
       </div>
     </div>
@@ -452,6 +461,32 @@ tailwind.config = {
 
 <script>
 // ==========================================
+// การจัดการ Port Local API ผ่าน localStorage
+// ==========================================
+function getLocalApiPort() {
+    return localStorage.getItem('hosxp_api_port') || '5000';
+}
+
+const inputSettingPort = document.getElementById('setting-api-port');
+const btnSavePort = document.getElementById('btn-save-port');
+
+if (inputSettingPort) {
+    inputSettingPort.value = getLocalApiPort();
+}
+
+if (btnSavePort) {
+    btnSavePort.addEventListener('click', () => {
+        const portVal = inputSettingPort.value.trim();
+        if (portVal && !isNaN(portVal)) {
+            localStorage.setItem('hosxp_api_port', portVal);
+            alert(`✅ บันทึก Port API เป็น ${portVal} เรียบร้อยแล้ว`);
+        } else {
+            alert('กรุณากรอกตัวเลข Port ให้ถูกต้อง');
+        }
+    });
+}
+
+// ==========================================
 // ควบคุม Mobile Sidebar (Hamburger Menu & Drawer)
 // ==========================================
 const sidebar = document.getElementById('sidebar');
@@ -514,7 +549,6 @@ const firebaseConfig = {
     measurementId: "G-304XVHFND5"
 };
 
-// 🔴 อัปเดต URL ของ Google Apps Script ใหม่
 const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwDBd2i6QbW4A_8NiHPI_zt6w-l_ZQHgrmIX99aEaIdOCjx_FYUxweWBN3JFr-gjCWgDA/exec"; 
 const MAX_GAS_SIZE = 100 * 1024 * 1024; // 100 MB Limit
 
@@ -657,14 +691,15 @@ if (inputUploadHn) {
             } catch (err) { console.log("IndexedDB search error:", err); }
         }
 
-        // ชั้นที่ 2: ถาม HOSxP (Local API)
+        // ชั้นที่ 2: ถาม HOSxP (ดึง Port จากการตั้งค่าหน้าเว็บแบบ Dynamic)
         if (!found) {
             try {
                 statusUploadHn.innerText = "กำลังค้นหาคนไข้ใหม่จาก HOSxP...";
                 const formData = new FormData();
                 formData.append('hn', hnToSearch);
 
-                const response = await fetch('http://127.0.0.1:5000/search', {
+                const currentPort = getLocalApiPort();
+                const response = await fetch(`http://127.0.0.1:${currentPort}/search`, {
                     method: 'POST',
                     body: formData
                 });
@@ -1007,7 +1042,7 @@ function openDetailModal(data) {
 }
 
 // ==========================================
-// 🖨️ ระบบเปิดหน้าพิมพ์ผลอ่าน (เปิดแท็บใหม่แบบหน้า View ปกติ)
+// 🖨️ ระบบเปิดหน้าพิมพ์ผลอ่าน
 // ==========================================
 function printPdfDocument() {
     const iframe = document.getElementById('modal-pdf-viewer');
