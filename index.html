@@ -239,4 +239,1401 @@ tailwind.config = {
       <div class="flex items-center gap-3 px-4 py-3 rounded-xl bg-white/5">
         <div class="min-w-0 flex-1">
           <p id="current-hospital" class="text-xs sm:text-sm font-bold text-white leading-tight break-words whitespace-normal">-</p>
-          <p class="text-xs text-emerald-400 mt-1 flex items-center gap-1.5"><span class="w-2 h-2 rounded
+          <p class="text-xs text-emerald-400 mt-1 flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-emerald-400"></span> ออนไลน์</p>
+        </div>
+        <button id="btn-logout" title="ออกจากระบบ" class="text-slate-400 hover:text-rose-400 transition p-2 shrink-0">
+          <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 8H6a2 2 0 01-2-2V6a2 2 0 012-2h7"/></svg>
+        </button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="flex-1 min-w-0">
+    <header class="sticky top-0 z-20 bg-white/80 backdrop-blur-xl border-b border-slate-200">
+      <div class="px-4 sm:px-6 h-16 sm:h-20 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <button id="btn-open-sidebar" class="p-2 -ml-2 rounded-xl text-slate-700 hover:bg-slate-100 lg:hidden">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/></svg>
+          </button>
+          <div>
+            <h1 id="page-title" class="text-xl sm:text-2xl font-bold tracking-tight">ผู้ป่วยเข้า</h1>
+            <p class="text-xs sm:text-sm text-slate-500 hidden sm:block">รายการส่งต่อภาพ DICOM ทั้งหมดของหน่วยงาน</p>
+          </div>
+        </div>
+        <button onclick="document.getElementById('btn-open-upload').click()" class="sm:hidden px-3 py-1.5 rounded-lg bg-brand-600 text-white text-xs font-semibold flex items-center gap-1">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M12 5v14m-7-7h14"/></svg>
+          ส่งต่อ
+        </button>
+      </div>
+    </header>
+
+    <div class="p-4 sm:p-6 space-y-4 sm:space-y-6">
+      <div class="p-4 sm:p-6 card">
+        <div class="flex flex-col lg:flex-row lg:items-end gap-3 sm:gap-4">
+          <div class="flex-1">
+            <label class="block text-xs sm:text-sm font-semibold text-slate-500 mb-1 sm:mb-2">ค้นหา</label>
+            <input type="text" id="filter-keyword" placeholder="HN หรือชื่อผู้ป่วย" class="field">
+          </div>
+          <div class="flex-1">
+            <label class="block text-xs sm:text-sm font-semibold text-slate-500 mb-1 sm:mb-2">ตั้งแต่วันที่</label>
+            <input type="date" id="filter-start" class="field">
+          </div>
+          <div class="flex-1">
+            <label class="block text-xs sm:text-sm font-semibold text-slate-500 mb-1 sm:mb-2">ถึงวันที่</label>
+            <input type="date" id="filter-end" class="field">
+          </div>
+          <div class="flex gap-2">
+            <button id="btn-clear" class="btn-ghost w-full lg:w-auto">ล้างตัวกรอง</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Table Container -->
+      <div class="card overflow-hidden">
+        <div class="px-5 py-4 flex items-center justify-between border-b border-slate-200">
+          <div class="flex items-center gap-2 sm:gap-3">
+            <span class="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-emerald-500"></span>
+            <h3 class="text-base sm:text-lg font-bold">รายการส่งต่อ</h3>
+          </div>
+          <span id="record-count" class="text-xs sm:text-sm font-medium px-3 sm:px-4 py-1 rounded-full bg-slate-100 text-slate-600">0 รายการ</span>
+        </div>
+
+        <div class="overflow-x-auto hidden md:block">
+          <table class="w-full text-base">
+            <thead class="bg-slate-50/70 text-sm text-slate-500">
+              <tr>
+                <th class="px-6 py-4 text-left font-bold">วันที่ / เวลา</th>
+                <th class="px-4 py-4 text-left font-bold">HN / CID</th>
+                <th class="px-4 py-4 text-left font-bold">ชื่อ-นามสกุล / ไฟล์</th>
+                <th id="col-hospital-type" class="px-4 py-4 text-left font-bold">รพ.ต้นทาง</th>
+                <th class="px-4 py-4 text-right font-bold">จัดการ</th>
+              </tr>
+            </thead>
+            <tbody id="referral-list" class="divide-y divide-slate-100"></tbody>
+          </table>
+        </div>
+        <div id="referral-list-mobile" class="md:hidden divide-y divide-slate-100"></div>
+      </div>
+    </div>
+  </main>
+</div>
+</section>
+
+<!-- ═══════════ DETAIL MODAL ═══════════ -->
+<div id="detail-modal" class="hidden fixed inset-0 z-50 bg-ink-900/50 backdrop-blur-sm p-0 sm:p-8 overflow-y-auto">
+  <div class="bg-white w-full sm:max-w-6xl mx-auto sm:rounded-3xl shadow-2xl min-h-full sm:min-h-0 animate-pop overflow-hidden flex flex-col">
+    <div class="no-print px-5 sm:px-8 py-4 sm:py-5 flex items-center justify-between border-b border-slate-200 sticky top-0 bg-white z-10">
+      <div class="flex items-center gap-3 sm:gap-4">
+        <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-brand-50 text-brand-600 grid place-items-center">
+          <svg class="w-6 h-6 sm:w-7 sm:h-7" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h6l6 6v11a2 2 0 01-2 2z"/></svg>
+        </div>
+        <h3 class="font-bold text-lg sm:text-xl">รายละเอียดการส่งต่อ</h3>
+      </div>
+      <div class="flex items-center gap-2 sm:gap-3">
+        <button id="btn-print-pdf" onclick="printPdfDocument()" class="px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-semibold border border-slate-200 hover:bg-slate-50 flex items-center gap-1.5 sm:gap-2 transition">
+          <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M6 9V3h12v6M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2M6 14h12v7H6z"/></svg>พิมพ์ผล
+        </button>
+        <button id="btn-close-detail" class="w-10 h-10 sm:w-12 sm:h-12 rounded-xl hover:bg-slate-100 grid place-items-center transition">
+          <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+    </div>
+    <div id="printable-area" class="p-5 sm:p-8 space-y-5 sm:space-y-6 flex-1">
+      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
+        <div class="p-4 sm:p-5 rounded-2xl bg-slate-50/80 border border-slate-200/70">
+          <p class="text-xs sm:text-sm font-semibold text-slate-500 mb-1">HN</p>
+          <p id="modal-hn" class="font-bold text-xl sm:text-2xl">-</p>
+        </div>
+        <div class="p-4 sm:p-5 rounded-2xl bg-slate-50/80 border border-slate-200/70 sm:col-span-2">
+          <p class="text-xs sm:text-sm font-semibold text-slate-500 mb-1">ชื่อ-นามสกุล</p>
+          <p id="modal-name" class="font-bold text-xl sm:text-2xl">-</p>
+        </div>
+        <div class="p-4 sm:p-5 rounded-2xl bg-slate-50/80 border border-slate-200/70">
+          <p class="text-xs sm:text-sm font-semibold text-slate-500 mb-1">เลขบัตรประชาชน (CID)</p>
+          <p id="modal-cid" class="font-bold text-lg sm:text-xl">-</p>
+        </div>
+        <div class="p-4 sm:p-5 rounded-2xl bg-slate-50/80 border border-slate-200/70">
+          <p class="text-xs sm:text-sm font-semibold text-slate-500 mb-1">โรงพยาบาลต้นทาง</p>
+          <p id="modal-sender" class="font-semibold text-lg sm:text-xl">-</p>
+        </div>
+        <div class="p-4 sm:p-5 rounded-2xl bg-slate-50/80 border border-slate-200/70">
+          <p class="text-xs sm:text-sm font-semibold text-slate-500 mb-1">โรงพยาบาลปลายทาง</p>
+          <p id="modal-receiver" class="font-semibold text-lg sm:text-xl">-</p>
+        </div>
+      </div>
+      <div class="no-print flex flex-col sm:flex-row gap-3">
+        <a id="modal-zip-link" href="#" target="_blank" class="flex-1 px-5 py-3.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-sm sm:text-base font-semibold flex items-center justify-center gap-2 transition text-center">
+          ดาวน์โหลดไฟล์ภาพ (DICOM)
+        </a>
+        <a id="modal-pdf-download" href="#" target="_blank" class="flex-1 px-5 py-3.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-sm sm:text-base font-semibold flex items-center justify-center gap-2 transition text-center">
+          ดาวน์โหลดผลอ่าน (Report)
+        </a>
+      </div>
+      <div id="pdf-viewer-container" class="rounded-xl overflow-hidden border border-slate-200 bg-slate-100">
+        <iframe id="modal-pdf-viewer" class="w-full h-[55vh] sm:h-[700px]" frameborder="0"></iframe>
+      </div>
+      <div id="no-pdf-message" class="hidden rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 p-8 sm:p-12 text-center">
+         <p class="text-slate-500 text-base sm:text-lg font-semibold">เคสนี้ยังไม่มีการแนบไฟล์ผลอ่าน (Report)</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ UPLOAD MODAL ═══════════ -->
+<div id="upload-modal" class="hidden fixed inset-0 z-50 bg-ink-900/50 backdrop-blur-sm p-0 sm:p-8 overflow-y-auto">
+  <div class="bg-white w-full sm:max-w-2xl mx-auto sm:rounded-3xl shadow-2xl min-h-full sm:min-h-0 animate-pop">
+    <div class="px-5 sm:px-8 py-4 sm:py-5 flex items-center justify-between border-b border-slate-200 sticky top-0 bg-white z-10">
+      <div>
+        <h3 class="font-bold text-lg sm:text-xl">ส่งต่อผู้ป่วยใหม่</h3>
+        <p class="text-xs sm:text-sm text-slate-500">กรอกข้อมูลและเลือกแนบไฟล์อย่างน้อย 1 รายการ</p>
+      </div>
+      <button id="btn-close-upload" class="w-10 h-10 sm:w-12 sm:h-12 rounded-xl hover:bg-slate-100 grid place-items-center transition">
+        <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <form id="upload-form" class="p-5 sm:p-8 space-y-4 sm:space-y-5">
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
+        <div>
+          <label class="block text-xs sm:text-sm font-semibold mb-1 sm:mb-2 flex items-center justify-between">
+            <span>HN <span class="text-rose-500">*</span></span>
+            <span id="hn-search-status" class="text-xs font-medium text-slate-400"></span>
+          </label>
+          <input id="upload-hn" type="text" required autocomplete="off" placeholder="กรอก HN (กด Enter เพื่อค้นหา)" class="field">
+        </div>
+        <div>
+          <label class="block text-xs sm:text-sm font-semibold mb-1 sm:mb-2">ชื่อ-นามสกุล <span class="text-rose-500">*</span></label>
+          <input id="upload-name" type="text" required placeholder="ระบบจะดึงชื่อให้อัตโนมัติ" class="field">
+        </div>
+        <div>
+          <label class="block text-xs sm:text-sm font-semibold mb-1 sm:mb-2">เลขบัตรประชาชน (CID) <span class="text-rose-500">*</span></label>
+          <input id="upload-cid" type="text" required maxlength="13" pattern="\d{13}" placeholder="ตัวเลข 13 หลักติดกัน" class="field">
+        </div>
+        <div>
+          <label class="block text-xs sm:text-sm font-semibold mb-1 sm:mb-2">โรงพยาบาลปลายทาง <span class="text-rose-500">*</span></label>
+          <select id="upload-receiver" required class="field">
+            <option value="">— กำลังโหลดรายชื่อ —</option>
+          </select>
+        </div>
+        <div class="sm:col-span-2">
+          <label class="block text-xs sm:text-sm font-semibold mb-1 sm:mb-2">ระยะเวลาแสดงข้อมูล <span class="text-rose-500">*</span></label>
+          <select id="upload-expire" required class="field">
+            <option value="1">1 วัน</option>
+            <option value="3">3 วัน</option>
+            <option value="7">7 วัน</option>
+            <option value="15">15 วัน</option>
+            <option value="30" selected>30 วัน</option>
+          </select>
+        </div>
+      </div>
+      <div>
+        <label class="block text-xs sm:text-sm font-semibold mb-1 sm:mb-2 flex justify-between items-end">
+            <span>1. แนบไฟล์ผลอ่าน (Report)</span>
+            <span id="upload-pdf-size" class="text-xs sm:text-sm text-brand-600 font-bold bg-brand-50 px-2 py-0.5 rounded"></span>
+        </label>
+        <input type="file" id="upload-pdf" accept=".pdf" class="field file-field mb-4">
+        
+        <label class="block text-xs sm:text-sm font-semibold mb-1 sm:mb-2 flex justify-between items-end">
+            <span>2. แนบไฟล์ภาพ (DICOM)</span>
+            <span id="upload-zip-size" class="text-xs sm:text-sm text-brand-600 font-bold bg-brand-50 px-2 py-0.5 rounded"></span>
+        </label>
+        <input type="file" id="upload-zip" accept=".zip,.rar" class="field file-field">
+        <p class="text-xs sm:text-sm text-slate-500 mt-2">* สามารถเลือกแนบอย่างใดอย่างหนึ่งก่อนได้ และเพิ่มในภายหลัง</p>
+      </div>
+      <div id="upload-progress-container" class="hidden p-4 sm:p-5 rounded-xl bg-brand-50 border border-brand-200">
+        <div class="flex items-center gap-3 mb-3">
+          <svg class="animate-spin h-5 w-5 text-brand-600 shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          <p id="upload-progress-text" class="text-xs sm:text-sm font-semibold text-brand-800 truncate">กำลังเตรียมข้อมูล...</p>
+        </div>
+        <div class="h-2.5 sm:h-3 rounded-full bg-brand-200/60 overflow-hidden">
+          <div id="upload-progress-bar" class="h-full w-0 rounded-full bg-brand-500 transition-all duration-300"></div>
+        </div>
+      </div>
+      <div class="flex gap-3 pt-2">
+        <button type="button" id="btn-cancel-upload" class="btn-ghost">ยกเลิก</button>
+        <button id="btn-submit" type="submit" class="flex-1 px-5 sm:px-6 py-3 sm:py-4 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-sm sm:text-base font-semibold transition">
+          อัปโหลดและส่งต่อ
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ═══════════ APPEND MODAL (แนบไฟล์เพิ่ม) ═══════════ -->
+<div id="append-modal" class="hidden fixed inset-0 z-50 bg-ink-900/50 backdrop-blur-sm p-0 sm:p-8 overflow-y-auto">
+  <div class="bg-white w-full sm:max-w-xl mx-auto sm:rounded-3xl shadow-2xl min-h-full sm:min-h-0 animate-pop">
+    <div class="px-5 sm:px-8 py-4 sm:py-5 flex items-center justify-between border-b border-slate-200 sticky top-0 bg-white z-10">
+      <div>
+        <h3 class="font-bold text-lg sm:text-xl">แนบไฟล์เพิ่มเติม</h3>
+        <p id="append-subtitle" class="text-xs sm:text-sm text-slate-500">HN: -</p>
+      </div>
+      <button id="btn-close-append" class="w-10 h-10 sm:w-12 sm:h-12 rounded-xl hover:bg-slate-100 grid place-items-center transition">
+        <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <form id="append-form" class="p-5 sm:p-8 space-y-4 sm:space-y-5">
+      <input type="hidden" id="append-doc-id">
+      
+      <div id="append-pdf-group" class="hidden">
+        <label class="block text-xs sm:text-sm font-semibold mb-1 sm:mb-2 text-blue-700 flex justify-between items-end">
+            <span>แนบไฟล์ผลอ่าน (Report) ที่ขาดหาย</span>
+            <span id="append-pdf-size" class="text-xs sm:text-sm text-blue-700 font-bold bg-blue-100 px-2 py-0.5 rounded"></span>
+        </label>
+        <input type="file" id="append-pdf" accept=".pdf" class="w-full text-xs sm:text-base p-2.5 sm:p-3 border border-blue-200 bg-blue-50/50 rounded-xl">
+      </div>
+      
+      <div id="append-zip-group" class="hidden">
+        <label class="block text-xs sm:text-sm font-semibold mb-1 sm:mb-2 text-purple-700 flex justify-between items-end">
+            <span>แนบไฟล์ภาพ (DICOM) ที่ขาดหาย</span>
+            <span id="append-zip-size" class="text-xs sm:text-sm text-purple-700 font-bold bg-purple-100 px-2 py-0.5 rounded"></span>
+        </label>
+        <input type="file" id="append-zip" accept=".zip,.rar" class="w-full text-xs sm:text-base p-2.5 sm:p-3 border border-purple-200 bg-purple-50/50 rounded-xl">
+      </div>
+      
+      <div id="append-progress-container" class="hidden p-4 sm:p-5 rounded-xl bg-brand-50 border border-brand-200">
+        <div class="flex items-center gap-3 mb-3">
+          <svg class="animate-spin h-5 w-5 text-brand-600 shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          <p id="append-progress-text" class="text-xs sm:text-sm font-semibold text-brand-800 truncate">กำลังอัปโหลด...</p>
+        </div>
+        <div class="h-2.5 sm:h-3 rounded-full bg-brand-200/60 overflow-hidden">
+          <div id="append-progress-bar" class="h-full w-0 rounded-full bg-brand-500 transition-all duration-300"></div>
+        </div>
+      </div>
+      <div class="flex gap-3 pt-3">
+        <button type="button" id="btn-cancel-append" class="btn-ghost">ยกเลิก</button>
+        <button id="btn-submit-append" type="submit" class="flex-1 px-5 sm:px-6 py-3 sm:py-4 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-sm sm:text-base font-semibold transition">
+          อัปโหลดไฟล์เพิ่ม
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ═══════════ FIREBASE & SCRIPT ═══════════ -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
+
+<script>
+// ==========================================
+// ควบคุมการแสดงผล Port และดักรับค่าจาก Local Settings
+// ==========================================
+function getLocalApiPort() {
+    return localStorage.getItem('hosxp_api_port') || '5000';
+}
+
+const btnTogglePort = document.getElementById('btn-toggle-port-drawer');
+const portDrawer = document.getElementById('port-details-drawer');
+const iconChevron = document.getElementById('icon-chevron');
+const textDisplayPort = document.getElementById('text-display-port');
+const btnOpenLocal = document.getElementById('btn-open-local-settings');
+const badgeStatus = document.getElementById('api-status-badge');
+
+if (textDisplayPort) {
+    textDisplayPort.innerText = getLocalApiPort();
+}
+
+// คลิกเพื่อกางหรือพับแถบตั้งค่า
+if (btnTogglePort) {
+    btnTogglePort.addEventListener('click', () => {
+        const isHidden = portDrawer.classList.contains('hidden');
+        if (isHidden) {
+            portDrawer.classList.remove('hidden');
+            iconChevron.style.transform = 'rotate(180deg)';
+            textDisplayPort.innerText = getLocalApiPort();
+        } else {
+            portDrawer.classList.add('hidden');
+            iconChevron.style.transform = 'rotate(0deg)';
+        }
+    });
+}
+
+// กดเปิดหน้าจอตั้งค่า Local ขึ้นมา
+if (btnOpenLocal) {
+    btnOpenLocal.addEventListener('click', () => {
+        const port = getLocalApiPort();
+        window.open(`http://127.0.0.1:${port}/`, '_blank', 'width=540,height=600');
+    });
+}
+
+// ⚡ ดักรับคำสั่งส่งค่าพอร์ตใหม่จากหน้า Local แล้วอัปเดตและรีเฟรชหน้าจอทันที
+window.addEventListener('message', (event) => {
+    if (event.data && event.data.action === 'update_port') {
+        const newPort = event.data.port;
+        localStorage.setItem('hosxp_api_port', newPort);
+        window.location.reload();
+    }
+});
+
+// ตรวจสอบสถานะการเชื่อมต่อพอร์ต
+async function checkApiStatus() {
+    const port = getLocalApiPort();
+    if (!badgeStatus) return;
+    
+    badgeStatus.innerText = "กำลังตรวจ...";
+    badgeStatus.className = "text-[11px] font-bold px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 animate-pulse";
+
+    try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 2000);
+        const res = await fetch(`http://127.0.0.1:${port}/ping`, { method: 'GET', signal: controller.signal });
+        clearTimeout(timeoutId);
+
+        if (res.ok) {
+            badgeStatus.innerText = "● พร้อมใช้งาน";
+            badgeStatus.className = "text-[11px] font-bold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400";
+        } else {
+            throw new Error();
+        }
+    } catch (err) {
+        badgeStatus.innerText = "● ออฟไลน์";
+        badgeStatus.className = "text-[11px] font-bold px-2 py-0.5 rounded bg-rose-500/20 text-rose-400";
+    }
+}
+
+window.addEventListener('DOMContentLoaded', checkApiStatus);
+
+// ==========================================
+// ควบคุม Mobile Sidebar (Hamburger Menu & Drawer)
+// ==========================================
+const sidebar = document.getElementById('sidebar');
+const sidebarBackdrop = document.getElementById('sidebar-backdrop');
+const btnOpenSidebar = document.getElementById('btn-open-sidebar');
+const btnCloseSidebar = document.getElementById('btn-close-sidebar');
+
+function openSidebar() {
+    sidebar.classList.remove('-translate-x-full');
+    sidebarBackdrop.classList.remove('hidden');
+}
+
+function closeSidebar() {
+    sidebar.classList.add('-translate-x-full');
+    sidebarBackdrop.classList.add('hidden');
+}
+
+if (btnOpenSidebar) btnOpenSidebar.addEventListener('click', openSidebar);
+if (btnCloseSidebar) btnCloseSidebar.addEventListener('click', closeSidebar);
+if (sidebarBackdrop) sidebarBackdrop.addEventListener('click', closeSidebar);
+
+// ==========================================
+// ฟังก์ชันจัดการชื่อไฟล์ (ตั้งชื่อเป็น CID.YYYYMMDD.HHMMSS)
+// ==========================================
+function generateFileName(cid, originalFile) {
+    if (!originalFile) return "";
+    const ext = originalFile.name.substring(originalFile.name.lastIndexOf('.') + 1);
+    const now = new Date();
+    const yyyy = now.getFullYear();
+    const mm = String(now.getMonth() + 1).padStart(2, '0');
+    const dd = String(now.getDate()).padStart(2, '0');
+    const hh = String(now.getHours()).padStart(2, '0');
+    const min = String(now.getMinutes()).padStart(2, '0');
+    const ss = String(now.getSeconds()).padStart(2, '0');
+    
+    const fallbackCid = cid ? cid : "NOCID";
+    return `${fallbackCid}.${yyyy}${mm}${dd}.${hh}${min}${ss}.${ext}`;
+}
+
+// ==========================================
+// ฟังก์ชันจัดการ CID
+// ==========================================
+function getMaskedCID(cid) {
+    if (!cid || cid.length !== 13) return cid || "-";
+    return `xxxxxxxxx${cid.substring(9, 13)}`;
+}
+
+function getFullCID(cid) {
+    if (!cid || cid.length !== 13) return cid || "-";
+    return cid;
+}
+
+const firebaseConfig = {
+    apiKey: "AIzaSyDQSXj3-ojPsXbs2i7udVIVPL2E-byCBQc",
+    authDomain: "dicom-referral.firebaseapp.com",
+    projectId: "dicom-referral",
+    storageBucket: "dicom-referral.firebasestorage.app",
+    messagingSenderId: "1013234791188",
+    appId: "1:1013234791188:web:f169e4602dbf4735e40801",
+    measurementId: "G-304XVHFND5"
+};
+
+const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwDBd2i6QbW4A_8NiHPI_zt6w-l_ZQHgrmIX99aEaIdOCjx_FYUxweWBN3JFr-gjCWgDA/exec"; 
+const MAX_GAS_SIZE = 100 * 1024 * 1024; // 100 MB Limit
+
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+const storage = firebase.storage(); 
+
+let hospitalMap = {};
+let allReferrals = []; 
+let currentTab = 'inbox'; 
+
+// ==========================================
+// 1. ระบบ IndexedDB สำหรับเก็บรายชื่อผู้ป่วย (Local Cache) - V2 Data Segregation
+// ==========================================
+let localDb;
+const requestDb = window.indexedDB.open("PatientDB_V2", 1);
+requestDb.onupgradeneeded = function(event) {
+    localDb = event.target.result;
+    if (!localDb.objectStoreNames.contains("patients")) {
+        localDb.createObjectStore("patients", { keyPath: "id" });
+    }
+};
+requestDb.onsuccess = function(event) { localDb = event.target.result; };
+requestDb.onerror = function(event) { console.error("IndexedDB error:", event.target.errorCode); };
+
+const btnImportDb = document.getElementById('btn-import-db');
+const csvFileInput = document.getElementById('csv-file-input');
+if (btnImportDb && csvFileInput) {
+    btnImportDb.addEventListener('click', () => {
+        closeSidebar();
+        csvFileInput.click();
+    });
+    
+    csvFileInput.addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        
+        btnImportDb.innerText = "กำลังนำเข้า...";
+        btnImportDb.disabled = true;
+
+        Papa.parse(file, {
+            header: true,
+            skipEmptyLines: true,
+            complete: function(results) {
+                const transaction = localDb.transaction(["patients"], "readwrite");
+                const store = transaction.objectStore("patients");
+                let count = 0;
+                const myEmail = auth.currentUser.email;
+                
+                results.data.forEach(row => {
+                    const keys = Object.keys(row).map(k => k.toLowerCase());
+                    const origKeys = Object.keys(row);
+                    
+                    const getVal = (searchKey) => {
+                        const idx = keys.indexOf(searchKey);
+                        return idx !== -1 ? String(row[origKeys[idx]]).trim() : "";
+                    };
+
+                    const hnVal = getVal('hn');
+                    const cidVal = getVal('cid');
+                    
+                    if (hnVal) {
+                        let fullName = "";
+                        if (keys.includes('fname') && keys.includes('lname')) {
+                            const p = getVal('pname');
+                            const f = getVal('fname');
+                            const l = getVal('lname');
+                            fullName = `${p}${f} ${l}`.trim();
+                        } else {
+                            const nameKey = origKeys.find(key => key.toLowerCase() === 'name' || key.toLowerCase() === 'fullname');
+                            if (nameKey) fullName = String(row[nameKey]).trim();
+                        }
+
+                        if (fullName) {
+                            store.put({ 
+                                id: `${myEmail}_${hnVal}`, 
+                                hn: hnVal, 
+                                name: fullName, 
+                                cid: cidVal,
+                                owner: myEmail
+                            });
+                            count++;
+                        }
+                    }
+                });
+                
+                transaction.oncomplete = function() {
+                    alert(`อัปเดตฐานข้อมูลสำเร็จ! (จำนวน ${count} รายการ) \nผูกกับบัญชี: ${myEmail}`);
+                    btnImportDb.innerHTML = `<svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg> อัปเดตล่าสุด: ${new Date().toLocaleDateString('th-TH')}`;
+                    btnImportDb.classList.replace('text-slate-400', 'text-emerald-400');
+                    btnImportDb.disabled = false;
+                };
+            }
+        });
+        this.value = ''; 
+    });
+}
+
+// ==========================================
+// 2. ระบบค้นหา 4 ลำดับชั้น (Read-Through Cache)
+// ==========================================
+const inputUploadHn = document.getElementById('upload-hn');
+const inputUploadName = document.getElementById('upload-name');
+const inputUploadCid = document.getElementById('upload-cid');
+const statusUploadHn = document.getElementById('hn-search-status');
+
+if (inputUploadHn) {
+    const searchHn = async () => {
+        const hnToSearch = inputUploadHn.value.trim();
+        if (!hnToSearch) return;
+        
+        statusUploadHn.innerText = "กำลังค้นหา...";
+        statusUploadHn.className = "text-xs font-medium text-slate-400";
+        inputUploadName.value = ""; 
+        inputUploadCid.value = "";
+        let found = false;
+
+        // ชั้นที่ 1: ค้นหาจาก IndexedDB
+        if (localDb && !found) {
+            try {
+                const myEmail = auth.currentUser.email;
+                const searchId = `${myEmail}_${hnToSearch}`; 
+                
+                const result = await new Promise((resolve, reject) => {
+                    const transaction = localDb.transaction(["patients"], "readonly");
+                    const store = transaction.objectStore("patients");
+                    const request = store.get(searchId);
+                    request.onsuccess = () => resolve(request.result);
+                    request.onerror = () => reject(request.error);
+                });
+                
+                if (result) {
+                    inputUploadName.value = result.name;
+                    inputUploadCid.value = result.cid || "";
+                    statusUploadHn.innerText = "✅ พบประวัติ (จากฐานข้อมูล รพ. ของคุณ)";
+                    statusUploadHn.className = "text-xs font-bold text-emerald-500";
+                    found = true;
+                }
+            } catch (err) { console.log("IndexedDB search error:", err); }
+        }
+
+        // ชั้นที่ 2: ถาม HOSxP (ดึง Port จาก localStorage)
+        if (!found) {
+            try {
+                statusUploadHn.innerText = "กำลังค้นหาคนไข้ใหม่จาก HOSxP...";
+                const formData = new FormData();
+                formData.append('hn', hnToSearch);
+
+                const currentPort = getLocalApiPort();
+                const response = await fetch(`http://127.0.0.1:${currentPort}/search`, {
+                    method: 'POST',
+                    body: formData
+                });
+                const result = await response.json();
+
+                if (result.success) {
+                    const newPatientName = result.data.name;
+                    const newCid = result.data.cid || "";
+                    inputUploadName.value = newPatientName;
+                    inputUploadCid.value = newCid;
+                    statusUploadHn.innerText = "✅ ดึงข้อมูลใหม่จาก HOSxP สำเร็จ";
+                    statusUploadHn.className = "text-xs font-bold text-blue-500";
+                    found = true;
+
+                    if (localDb) {
+                        const myEmail = auth.currentUser.email;
+                        const tx = localDb.transaction(["patients"], "readwrite");
+                        const store = tx.objectStore("patients");
+                        store.put({ 
+                            id: `${myEmail}_${hnToSearch}`, 
+                            hn: hnToSearch, 
+                            name: newPatientName, 
+                            cid: newCid,
+                            owner: myEmail
+                        });
+                    }
+                }
+            } catch (e) { console.log("Local API Not Running or CORS Blocked", e); }
+        }
+
+        // ชั้นที่ 3: ค้นหาจากประวัติเก่าบน Firebase
+        if (!found) {
+            try {
+                statusUploadHn.innerText = "กำลังค้นหาจากประวัติส่งต่อเก่า...";
+                const querySnapshot = await db.collection("referrals").where("hn", "==", hnToSearch).limit(1).get();
+                if (!querySnapshot.empty) {
+                    const pData = querySnapshot.docs[0].data();
+                    inputUploadName.value = pData.patientName;
+                    inputUploadCid.value = pData.cid || "";
+                    statusUploadHn.innerText = "✅ พบประวัติ (จากระบบส่งต่อเก่า)";
+                    statusUploadHn.className = "text-xs font-bold text-amber-500";
+                    found = true;
+                }
+            } catch (e) { console.log(e); }
+        }
+
+        // ชั้นที่ 4: ไม่พบข้อมูล (Manual)
+        if (!found) {
+            statusUploadHn.innerText = "❌ ไม่พบชื่อในระบบ (กรุณาพิมพ์เอง)";
+            statusUploadHn.className = "text-xs font-bold text-rose-500";
+        }
+    };
+    
+    inputUploadHn.addEventListener('blur', searchHn);
+    inputUploadHn.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault(); 
+            searchHn();
+        }
+    });
+}
+
+// ==========================================
+// 3. ระบบหลักของเว็บ (ตาราง, อัปโหลด, เปิดไฟล์)
+// ==========================================
+function getHospitalDisplayName(email) { return hospitalMap[email] || email; }
+
+async function loadHospitals() {
+    try {
+        const snapshot = await db.collection("hospitals").get();
+        const selectEl = document.getElementById('upload-receiver');
+        selectEl.innerHTML = '<option value="">-- เลือกโรงพยาบาล --</option>';
+        hospitalMap = {};
+        snapshot.forEach((doc) => {
+            const data = doc.data();
+            hospitalMap[data.email] = data.name;
+            
+            if (auth.currentUser && data.email === auth.currentUser.email) return;
+
+            const option = document.createElement('option');
+            option.value = data.email; 
+            option.textContent = data.name;
+            selectEl.appendChild(option);
+        });
+        if (auth.currentUser) document.getElementById('current-hospital').innerText = getHospitalDisplayName(auth.currentUser.email);
+    } catch (error) { console.error(error); }
+}
+
+const loginForm = document.getElementById('login-form');
+if (loginForm) {
+    loginForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        const btn = document.getElementById('btn-login');
+        btn.disabled = true; btn.innerText = "กำลังเข้าสู่ระบบ...";
+        auth.signInWithEmailAndPassword(document.getElementById('email').value.trim(), document.getElementById('password').value)
+            .catch(err => { alert("เข้าสู่ระบบไม่สำเร็จ"); btn.disabled = false; btn.innerText = "เข้าสู่ระบบ"; });
+    });
+}
+
+const btnLogout = document.getElementById('btn-logout');
+if (btnLogout) btnLogout.addEventListener('click', () => auth.signOut());
+
+auth.onAuthStateChanged(async user => {
+    const loginSec = document.getElementById('login-section');
+    const dashSec = document.getElementById('dashboard-section');
+    if (user) {
+        loginSec.style.display = 'none';
+        dashSec.classList.remove('hidden');
+        await loadHospitals();
+        document.getElementById('current-hospital').innerText = getHospitalDisplayName(user.email);
+        fetchReferralsData(user.email); 
+    } else {
+        loginSec.style.display = '';
+        dashSec.classList.add('hidden');
+        const btnLogin = document.getElementById('btn-login');
+        if (btnLogin) { btnLogin.disabled = false; btnLogin.innerText = "เข้าสู่ระบบ"; }
+    }
+});
+
+function fetchReferralsData(email) {
+    db.collection("referrals").orderBy("createdAt", "desc").onSnapshot(snapshot => {
+        allReferrals = [];
+        const now = new Date();
+        snapshot.forEach(doc => {
+            const data = doc.data();
+            data.id = doc.id; 
+            const expireDate = data.expireAt ? new Date(data.expireAt.seconds * 1000) : new Date();
+            if (now <= expireDate && (data.receiverHospital === email || data.senderHospital === email)) {
+                allReferrals.push(data);
+            }
+        });
+        renderTable(); 
+    });
+}
+
+setInterval(() => {
+    document.querySelectorAll('.countdown-timer').forEach(el => {
+        const expireTime = parseInt(el.getAttribute('data-expire'));
+        const diffMs = expireTime - new Date().getTime();
+        if (diffMs <= 0) {
+            el.outerHTML = `<span class="pill pill-rose">หมดอายุ</span>`;
+        } else {
+            const diffHrs = Math.floor(diffMs / (1000 * 60 * 60));
+            const diffMins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+            const hh = String(diffHrs).padStart(2, '0');
+            const mm = String(diffMins).padStart(2, '0');
+            el.innerText = `เหลือ ${hh}:${mm} ชม.`;
+        }
+    });
+}, 60000);
+
+function switchTab(tabName) {
+    currentTab = tabName;
+    const tabIn = document.getElementById('tab-inbox');
+    const tabOut = document.getElementById('tab-outbox');
+    document.getElementById('col-hospital-type').innerText = tabName === 'inbox' ? 'รพ.ต้นทาง' : 'รพ.ปลายทาง';
+    document.getElementById('page-title').innerText = tabName === 'inbox' ? 'ผู้ป่วยเข้า' : 'ผู้ป่วยออก';
+
+    if (tabName === 'inbox') {
+        tabIn.className = "nav-item is-active";
+        tabOut.className = "nav-item";
+    } else {
+        tabOut.className = "nav-item is-active";
+        tabIn.className = "nav-item";
+    }
+    closeSidebar();
+    renderTable();
+}
+
+document.getElementById('tab-inbox')?.addEventListener('click', () => switchTab('inbox'));
+document.getElementById('tab-outbox')?.addEventListener('click', () => switchTab('outbox'));
+document.getElementById('btn-clear')?.addEventListener('click', () => {
+    document.getElementById('filter-keyword').value = "";
+    document.getElementById('filter-start').value = "";
+    document.getElementById('filter-end').value = "";
+    renderTable();
+});
+
+function renderTable() {
+    const listEl = document.getElementById('referral-list');
+    const listMobileEl = document.getElementById('referral-list-mobile');
+    if (!listEl) return;
+    
+    listEl.innerHTML = "";
+    if (listMobileEl) listMobileEl.innerHTML = "";
+    
+    const keyword = document.getElementById('filter-keyword').value.toLowerCase();
+    const startStr = document.getElementById('filter-start').value;
+    const endStr = document.getElementById('filter-end').value;
+    const startDate = startStr ? new Date(startStr + "T00:00:00") : null;
+    const endDate = endStr ? new Date(endStr + "T23:59:59") : null;
+    const myEmail = auth.currentUser.email;
+    let count = 0;
+
+    allReferrals.forEach(data => {
+        if (currentTab === 'inbox' && data.receiverHospital !== myEmail) return;
+        if (currentTab === 'outbox' && data.senderHospital !== myEmail) return;
+
+        const searchStr = (data.hn + " " + data.patientName + " " + (data.cid || "")).toLowerCase();
+        if (keyword && !searchStr.includes(keyword)) return;
+
+        const docDate = data.createdAt ? new Date(data.createdAt.seconds * 1000) : new Date();
+        const expireDate = data.expireAt ? new Date(data.expireAt.seconds * 1000) : new Date();
+        const diffMs = expireDate - new Date();
+        
+        if (startDate && docDate < startDate) return;
+        if (endDate && docDate > endDate) return;
+
+        count++;
+        const dateStr = docDate.toLocaleDateString('th-TH', {day:'2-digit', month:'short', year:'2-digit'}) + ' ' + docDate.toLocaleTimeString('th-TH', {hour:'2-digit', minute:'2-digit'});
+        const hospitalCol = currentTab === 'inbox' ? getHospitalDisplayName(data.senderHospital) : getHospitalDisplayName(data.receiverHospital);
+        const hospMatch = String(hospitalCol).match(/^(โรงพยาบาล|รพ\.)\s*(.+)$/);
+        const hospitalHtml = hospMatch ? `<span class="block whitespace-nowrap">${hospMatch[1]}</span><span class="block">${hospMatch[2]}</span>` : hospitalCol;
+
+        let expireBadge = '';
+        if (diffMs <= 0) {
+            expireBadge = `<span class="pill pill-rose">หมดอายุ</span>`;
+        } else {
+            const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+            if (diffDays >= 1) {
+                expireBadge = `<span class="pill pill-amber">เหลือ ${diffDays} วัน</span>`;
+            } else {
+                const diffHrs = Math.floor(diffMs / (1000 * 60 * 60));
+                const diffMins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+                const hh = String(diffHrs).padStart(2, '0');
+                const mm = String(diffMins).padStart(2, '0');
+                expireBadge = `<span class="countdown-timer pill pill-orange" data-expire="${expireDate.getTime()}">เหลือ ${hh}:${mm} ชม.</span>`;
+            }
+        }
+
+        const hasPdf = !!data.pdfFileUrl;
+        const hasZip = !!data.zipFileUrl;
+        let fileBadges = `<div class="mt-1.5 flex flex-wrap gap-1.5">`;
+        if (hasPdf) fileBadges += `<span class="pill pill-sky"><i class="dot"></i>Report</span>`;
+        if (hasZip) fileBadges += `<span class="pill pill-violet"><i class="dot"></i>DICOM</span>`;
+        if (!hasPdf && !hasZip) fileBadges += `<span class="pill pill-slate">ยังไม่มีไฟล์</span>`;
+        fileBadges += `</div>`;
+
+        let actionButtons = `<button class="btn-view act act-view">เปิดดู</button>`;
+        if (!hasPdf || !hasZip) {
+            if (data.senderHospital === myEmail) {
+                actionButtons += `<button class="btn-append act act-append">แนบไฟล์เพิ่ม</button>`;
+            }
+        }
+        actionButtons += `<button class="btn-del act act-del">ลบ</button>`;
+
+        const maskedCid = data.cid ? getMaskedCID(data.cid) : '-';
+
+        const row = document.createElement('tr');
+        row.className = "hover:bg-slate-50/80 transition";
+        row.innerHTML = `
+            <td class="px-6 py-4 font-medium">${dateStr}<div class="mt-1.5">${expireBadge}</div></td>
+            <td class="px-4 py-4">
+                <div><span class="inline-block text-sm font-semibold px-2.5 py-1 rounded-lg bg-slate-100">${data.hn}</span></div>
+                <div class="cid-chip" title="CID"><span class="cid-emoji">💳</span> ${maskedCid}</div>
+            </td>
+            <td class="px-4 py-4 font-medium min-w-[200px]">${data.patientName}${fileBadges}</td>
+            <td class="px-4 py-4 text-slate-600">${hospitalHtml}</td>
+            <td class="px-4 py-4"><div class="flex flex-wrap justify-end gap-2">${actionButtons}</div></td>`;
+        
+        row.querySelector('.btn-view').addEventListener('click', () => openDetailModal(data));
+        row.querySelector('.btn-del').addEventListener('click', () => deleteReferral(data));
+        const btnAppend = row.querySelector('.btn-append');
+        if (btnAppend) btnAppend.addEventListener('click', () => openAppendModal(data));
+        
+        listEl.appendChild(row);
+
+        if (listMobileEl) {
+            const mRow = document.createElement('div');
+            mRow.className = "p-4 space-y-2.5 border-b border-slate-100";
+            mRow.innerHTML = `
+                <div class="flex items-start justify-between gap-2">
+                    <div>
+                        <p class="font-bold text-base text-slate-800">${data.patientName}</p>
+                        <p class="text-xs text-slate-500 font-mono mt-0.5">HN ${data.hn} | <span class="cid-emoji">💳</span> ${maskedCid}</p>
+                        ${fileBadges}
+                    </div>
+                    ${expireBadge}
+                </div>
+                <p class="text-xs text-slate-500">${hospitalCol} · ${dateStr} น.</p>
+                <div class="flex gap-2 pt-1">
+                    <button class="btn-view-m flex-1 py-2 rounded-xl text-xs sm:text-sm font-bold bg-brand-600 text-white shadow-sm">เปิดดู</button>
+                    ${(!hasPdf || !hasZip) && data.senderHospital === myEmail ? `<button class="btn-append-m flex-1 py-2 rounded-xl text-xs sm:text-sm font-bold bg-amber-100 text-amber-700">แนบเพิ่ม</button>` : ''}
+                    <button class="btn-del-m px-3 py-2 rounded-xl text-xs sm:text-sm font-bold border border-rose-200 text-rose-600">ลบ</button>
+                </div>`;
+            mRow.querySelector('.btn-view-m').addEventListener('click', () => openDetailModal(data));
+            mRow.querySelector('.btn-del-m').addEventListener('click', () => deleteReferral(data));
+            const btnAppendM = mRow.querySelector('.btn-append-m');
+            if (btnAppendM) btnAppendM.addEventListener('click', () => openAppendModal(data));
+            listMobileEl.appendChild(mRow);
+        }
+    });
+    document.getElementById('record-count').innerText = count + " รายการ";
+}
+
+document.getElementById('filter-keyword')?.addEventListener('input', renderTable);
+document.getElementById('filter-start')?.addEventListener('change', renderTable);
+document.getElementById('filter-end')?.addEventListener('change', renderTable);
+
+function openDetailModal(data) {
+    document.getElementById('modal-hn').innerText = data.hn;
+    document.getElementById('modal-name').innerText = data.patientName;
+    document.getElementById('modal-cid').innerText = data.cid ? getFullCID(data.cid) : '-'; 
+    document.getElementById('modal-sender').innerText = getHospitalDisplayName(data.senderHospital);
+    document.getElementById('modal-receiver').innerText = getHospitalDisplayName(data.receiverHospital);
+    
+    const zipBtn = document.getElementById('modal-zip-link');
+    if (data.zipFileUrl) {
+        zipBtn.href = data.zipFileUrl;
+        zipBtn.style.display = 'flex';
+    } else {
+        zipBtn.style.display = 'none';
+    }
+    
+    const pdfViewerCont = document.getElementById('pdf-viewer-container');
+    const noPdfMsg = document.getElementById('no-pdf-message');
+    const pdfBtn = document.getElementById('modal-pdf-download');
+    const btnPrint = document.getElementById('btn-print-pdf');
+
+    if (data.pdfFileUrl) {
+        pdfViewerCont.style.display = 'block';
+        noPdfMsg.style.display = 'none';
+        pdfBtn.style.display = 'flex';
+        btnPrint.style.display = 'flex';
+        
+        if (data.pdfFileUrl.includes('firebasestorage')) {
+            document.getElementById('modal-pdf-viewer').src = data.pdfFileUrl;
+            pdfBtn.href = data.pdfFileUrl;
+        } else {
+            const driveId = data.pdfFileId || data.pdfFileUrl.match(/\/d\/(.+?)\//)[1];
+            document.getElementById('modal-pdf-viewer').src = `https://drive.google.com/file/d/${driveId}/preview`;
+            pdfBtn.href = `https://drive.google.com/uc?export=download&id=${driveId}`;
+        }
+    } else {
+        pdfViewerCont.style.display = 'none';
+        noPdfMsg.style.display = 'block';
+        pdfBtn.style.display = 'none';
+        btnPrint.style.display = 'none';
+    }
+    
+    document.getElementById('detail-modal').classList.remove('hidden');
+}
+
+// ==========================================
+// 🖨️ ระบบเปิดหน้าพิมพ์ผลอ่าน
+// ==========================================
+function printPdfDocument() {
+    const iframe = document.getElementById('modal-pdf-viewer');
+    if (iframe && iframe.src) {
+        let openUrl = iframe.src;
+        if (openUrl.includes('drive.google.com') && openUrl.includes('/preview')) {
+            openUrl = openUrl.replace('/preview', '/view');
+        }
+        window.open(openUrl, '_blank');
+    }
+}
+
+document.getElementById('btn-close-detail').addEventListener('click', () => {
+    document.getElementById('detail-modal').classList.add('hidden');
+    document.getElementById('modal-pdf-viewer').src = "";
+});
+
+async function deleteReferral(data) {
+    if(!confirm(`ยืนยันการลบข้อมูลผู้ป่วย HN: ${data.hn} ใช่หรือไม่?\n\n⚠️ คำเตือน: ไฟล์ผลอ่านและภาพ DICOM จะถูกลบทิ้งถาวรและไม่สามารถกู้คืนได้`)) return;
+    try {
+        await db.collection("referrals").doc(data.id).delete();
+        
+        let drivePdfId = null, driveZipId = null;
+
+        if (data.pdfFileUrl && data.pdfFileUrl.includes('firebasestorage')) {
+            await storage.refFromURL(data.pdfFileUrl).delete().catch(e=>console.log("PDF missing from Firebase"));
+        } else if (data.pdfFileUrl) {
+            const m = data.pdfFileUrl.match(/\/d\/(.+?)\//);
+            if(m) drivePdfId = m[1];
+        }
+
+        if (data.zipFileUrl && data.zipFileUrl.includes('firebasestorage')) {
+            await storage.refFromURL(data.zipFileUrl).delete().catch(e=>console.log("ZIP missing from Firebase"));
+        } else if (data.zipFileUrl) {
+            const m = data.zipFileUrl.match(/\/d\/(.+?)\//);
+            if(m) driveZipId = m[1];
+        }
+
+        if (drivePdfId || driveZipId) {
+            fetch(GAS_WEB_APP_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify({ action: "deleteFiles", pdfId: drivePdfId, zipId: driveZipId })
+            });
+        }
+        alert("ลบข้อมูลสำเร็จเรียบร้อย");
+    } catch (error) { alert("เกิดข้อผิดพลาดในการลบ: " + error.message); }
+}
+
+function formatFileSize(bytes) {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+
+function setupFileSizeListener(inputId, labelId) {
+    const input = document.getElementById(inputId);
+    const label = document.getElementById(labelId);
+    if(input && label) {
+        input.addEventListener('change', function() {
+            if(this.files && this.files[0]) {
+                label.innerText = 'ขนาด: ' + formatFileSize(this.files[0].size);
+            } else {
+                label.innerText = '';
+            }
+        });
+    }
+}
+
+setupFileSizeListener('upload-pdf', 'upload-pdf-size');
+setupFileSizeListener('upload-zip', 'upload-zip-size');
+setupFileSizeListener('append-pdf', 'append-pdf-size');
+setupFileSizeListener('append-zip', 'append-zip-size');
+
+const btnOpenUpload = document.getElementById('btn-open-upload');
+if (btnOpenUpload) {
+    btnOpenUpload.addEventListener('click', () => {
+        closeSidebar();
+        document.getElementById('upload-pdf-size').innerText = "";
+        document.getElementById('upload-zip-size').innerText = "";
+        document.getElementById('hn-search-status').innerText = "";
+        document.getElementById('upload-modal').classList.remove('hidden');
+        
+        try {
+            fetch(GAS_WEB_APP_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify({ action: "ping" })
+            });
+        } catch (e) { console.log("Ping background error: ", e); }
+    });
+}
+document.getElementById('btn-close-upload')?.addEventListener('click', () => document.getElementById('upload-modal').classList.add('hidden'));
+document.getElementById('btn-cancel-upload')?.addEventListener('click', () => document.getElementById('upload-modal').classList.add('hidden'));
+
+document.getElementById('btn-close-append')?.addEventListener('click', () => document.getElementById('append-modal').classList.add('hidden'));
+document.getElementById('btn-cancel-append')?.addEventListener('click', () => document.getElementById('append-modal').classList.add('hidden'));
+
+function getBase64(fileBlob) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(fileBlob);
+        reader.onload = () => resolve(reader.result.split(',')[1]);
+        reader.onerror = error => reject(error);
+    });
+}
+
+// ==========================================
+// 🚀 ฟังก์ชันอัปโหลด Google Drive (Parallel + Simple Upload)
+// ==========================================
+async function uploadToGoogleDriveViaGAS(file, expireDateStr, progressTextPrefix, progressBarId, progressTextId, customFileName) {
+    if (!file) return "";
+    const finalName = customFileName || file.name;
+    document.getElementById(progressTextId).innerText = `${progressTextPrefix} กำลังเตรียมข้อมูล...`;
+
+    if (file.size <= 5 * 1024 * 1024) { 
+        document.getElementById(progressBarId).style.width = '50%';
+        const base64Data = await getBase64(file);
+        
+        try {
+            document.getElementById(progressTextId).innerText = `${progressTextPrefix} กำลังส่งข้อมูล (Drive)...`;
+            const res = await fetch(GAS_WEB_APP_URL, {
+                method: 'POST',
+                body: JSON.stringify({
+                    action: "simpleUpload", 
+                    fileName: finalName,
+                    mimeType: file.type || "application/octet-stream",
+                    expireDate: expireDateStr,
+                    base64Data: base64Data
+                })
+            });
+            const data = await res.json();
+            if (data.status === "success" && data.fileId) {
+                document.getElementById(progressBarId).style.width = '100%';
+                document.getElementById(progressTextId).innerText = `${progressTextPrefix} ${finalName} (100%)`;
+                return `https://drive.google.com/file/d/${data.fileId}/view`;
+            } else {
+                throw new Error(data.message || "Simple Upload Failed");
+            }
+        } catch (err) {
+            console.log("Simple upload failed, fallback to chunk...", err);
+        }
+    }
+
+    const chunkSize = 8 * 1024 * 1024;
+    let start = 0;
+    
+    const initRes = await fetch(GAS_WEB_APP_URL, { method: 'POST', body: JSON.stringify({ action: "initUpload", fileName: finalName, mimeType: file.type || "application/octet-stream", expireDate: expireDateStr }) });
+    const initData = await initRes.json();
+    if (initData.status !== "success") throw new Error("เชื่อมต่อ Google Drive ไม่สำเร็จ");
+    const uploadUrl = initData.uploadUrl;
+
+    while (start < file.size) {
+        let end = start + chunkSize - 1;
+        if (end >= file.size) end = file.size - 1;
+        const chunk = file.slice(start, end + 1);
+        const base64Chunk = await getBase64(chunk);
+        
+        let chunkSuccess = false; let retryCount = 0; let chunkData = null;
+        while (!chunkSuccess && retryCount < 5) {
+            try {
+                const chunkRes = await fetch(GAS_WEB_APP_URL, { method: 'POST', body: JSON.stringify({ action: "uploadChunk", uploadUrl: uploadUrl, base64Data: base64Chunk, start: start, end: end, totalSize: file.size }) });
+                const textRes = await chunkRes.text();
+                chunkData = JSON.parse(textRes);
+                if (chunkData.status === "error") throw new Error(chunkData.message);
+                chunkSuccess = true; 
+            } catch (err) {
+                retryCount++;
+                const currentPercent = Math.round((start / file.size) * 100);
+                document.getElementById(progressTextId).innerText = `${progressTextPrefix} ${finalName} (${currentPercent}%) - รอการเชื่อมต่อใหม่...`;
+                if (retryCount >= 5) throw new Error("หมดเวลาส่งข้อมูล");
+                await new Promise(r => setTimeout(r, 2000)); 
+            }
+        }
+        const percent = Math.round(((end + 1) / file.size) * 100);
+        document.getElementById(progressBarId).style.width = percent + '%';
+        document.getElementById(progressTextId).innerText = `${progressTextPrefix} ${finalName} (${percent}%) - (Drive)`;
+        
+        if (chunkData && chunkData.status === "success" && chunkData.fileId) {
+            return `https://drive.google.com/file/d/${chunkData.fileId}/view`;
+        }
+        start = end + 1;
+    }
+}
+
+function uploadToFirebaseStorage(file, folderPath, progressPrefix, progressBarId, progressTextId, customFileName) {
+    if (!file) return Promise.resolve("");
+    const finalName = customFileName || `${Date.now()}_${file.name}`;
+    return new Promise((resolve, reject) => {
+        const fileRef = storage.ref().child(`${folderPath}/${finalName}`);
+        const uploadTask = fileRef.put(file);
+
+        uploadTask.on('state_changed', 
+            (snapshot) => {
+                const progress = Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100);
+                document.getElementById(progressBarId).style.width = progress + '%';
+                document.getElementById(progressTextId).innerText = `${progressPrefix} ${finalName} (${progress}%) - (Firebase)`;
+            }, 
+            (error) => reject(error), 
+            async () => {
+                const downloadURL = await uploadTask.snapshot.ref.getDownloadURL();
+                resolve(downloadURL);
+            }
+        );
+    });
+}
+
+const uploadForm = document.getElementById('upload-form');
+if (uploadForm) {
+    uploadForm.addEventListener('submit', async function(event) {
+        event.preventDefault();
+        
+        const pdfFile = document.getElementById('upload-pdf').files[0];
+        const zipFile = document.getElementById('upload-zip').files[0];
+        const cidVal = document.getElementById('upload-cid').value;
+        
+        if (!pdfFile && !zipFile) {
+            alert("กรุณาแนบไฟล์ผลอ่าน (Report) หรือไฟล์ภาพ (DICOM) อย่างน้อย 1 รายการครับ");
+            return;
+        }
+
+        const btnSubmit = document.getElementById('btn-submit');
+        btnSubmit.disabled = true;
+        document.getElementById('upload-progress-container').classList.remove('hidden');
+
+        try {
+            const expireDays = parseInt(document.getElementById('upload-expire').value);
+            const expireDate = new Date(); expireDate.setDate(expireDate.getDate() + expireDays);
+            const expireDateStr = expireDate.toISOString();
+            
+            let pdfPromise = Promise.resolve("");
+            if (pdfFile) {
+                document.getElementById('upload-progress-bar').style.width = '10%';
+                const customPdfName = generateFileName(cidVal, pdfFile);
+                if (pdfFile.size <= MAX_GAS_SIZE) {
+                    pdfPromise = uploadToGoogleDriveViaGAS(pdfFile, expireDateStr, "อัปโหลดผลอ่าน:", 'upload-progress-bar', 'upload-progress-text', customPdfName);
+                } else {
+                    pdfPromise = uploadToFirebaseStorage(pdfFile, 'pdfs', "อัปโหลดผลอ่าน:", 'upload-progress-bar', 'upload-progress-text', customPdfName);
+                }
+            }
+            
+            let zipPromise = Promise.resolve("");
+            if (zipFile) {
+                const customZipName = generateFileName(cidVal, zipFile);
+                if (zipFile.size <= MAX_GAS_SIZE) {
+                    zipPromise = uploadToGoogleDriveViaGAS(zipFile, expireDateStr, "อัปโหลดภาพ:", 'upload-progress-bar', 'upload-progress-text', customZipName);
+                } else {
+                    zipPromise = uploadToFirebaseStorage(zipFile, 'zips', "อัปโหลดภาพ:", 'upload-progress-bar', 'upload-progress-text', customZipName);
+                }
+            }
+
+            document.getElementById('upload-progress-text').innerText = "กำลังนำส่งไฟล์...";
+            const [finalPdfUrl, finalZipUrl] = await Promise.all([pdfPromise, zipPromise]);
+
+            document.getElementById('upload-progress-bar').style.width = '100%';
+            document.getElementById('upload-progress-text').innerText = "กำลังบันทึกข้อมูลเข้าระบบ...";
+            
+            const today = new Date();
+            const monthYearStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+            const senderEmail = auth.currentUser.email;
+            const receiverEmail = document.getElementById('upload-receiver').value;
+
+            await db.collection("referrals").add({
+                hn: document.getElementById('upload-hn').value,
+                patientName: document.getElementById('upload-name').value,
+                cid: cidVal,
+                senderHospital: senderEmail,
+                receiverHospital: receiverEmail,
+                pdfFileUrl: finalPdfUrl, 
+                zipFileUrl: finalZipUrl,
+                createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                expireAt: expireDate,
+                monthYear: monthYearStr,
+                hasPdf: !!pdfFile,
+                hasZip: !!zipFile,
+                isComplete: (!!pdfFile && !!zipFile)
+            });
+
+            try {
+                const statsRef = db.collection("monthly_stats").doc(monthYearStr);
+                await statsRef.set({
+                    totalReferrals: firebase.firestore.FieldValue.increment(1),
+                    [`hospitals.${senderEmail}.out`]: firebase.firestore.FieldValue.increment(1),
+                    [`hospitals.${receiverEmail}.in`]: firebase.firestore.FieldValue.increment(1)
+                }, { merge: true });
+            } catch (statErr) { console.log("Stats update error:", statErr); }
+
+            document.getElementById('upload-progress-text').innerText = "กำลังส่งการแจ้งเตือน LINE และบันทึก Log...";
+            const senderName = document.getElementById('current-hospital').innerText;
+            const receiverSelect = document.getElementById('upload-receiver');
+            const receiverName = receiverSelect.options[receiverSelect.selectedIndex].text;
+            
+            const rawCid = document.getElementById('upload-cid').value;
+            const displayCid = getMaskedCID(rawCid);
+            
+            let fileTypesStr = "";
+            if (pdfFile && zipFile) fileTypesStr = "ส่งมาให้ทั้งภาพและผลอ่าน";
+            else if (pdfFile) fileTypesStr = "ส่งผลอ่านมา";
+            else if (zipFile) fileTypesStr = "ส่งภาพการตรวจมา";
+
+            const lineMsg = `🔔 มีรายการส่งต่อใหม่!\n\nผู้ป่วย: ${document.getElementById('upload-name').value}\nHN: ${document.getElementById('upload-hn').value}\nCID: ${displayCid}\n📂 สิ่งที่ส่งมา: ${fileTypesStr}\n\n📤 ต้นทาง: ${senderName}\n📥 ปลายทาง: ${receiverName}\n\nกรุณาตรวจสอบรายละเอียดในระบบ DICOM Hub ครับ`;
+            
+            try {
+                fetch(GAS_WEB_APP_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify({ action: "sendLine", message: lineMsg })
+                });
+                
+                fetch(GAS_WEB_APP_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify({
+                        action: "logReferral",
+                        timestamp: new Date().toLocaleString('th-TH'),
+                        hn: document.getElementById('upload-hn').value,
+                        patientName: document.getElementById('upload-name').value,
+                        cid: displayCid,
+                        sender: senderName,
+                        receiver: receiverName,
+                        fileTypes: fileTypesStr
+                    })
+                });
+            } catch (lineErr) {
+                console.log("LINE/Log Error: ", lineErr);
+            }
+
+            alert("ส่งข้อมูลสำเร็จ!");
+            document.getElementById('upload-modal').classList.add('hidden');
+            document.getElementById('upload-pdf-size').innerText = "";
+            document.getElementById('upload-zip-size').innerText = "";
+            document.getElementById('hn-search-status').innerText = "";
+            document.getElementById('upload-form').reset();
+        } catch (error) { alert("เกิดข้อผิดพลาด: " + error.message); } 
+        finally {
+            btnSubmit.disabled = false;
+            document.getElementById('upload-progress-container').classList.add('hidden');
+            document.getElementById('upload-progress-bar').style.width = '0%';
+        }
+    });
+}
+
+let currentExpireDateForAppend = null;
+let currentCidForAppend = "NOCID"; 
+let currentAppendData = null;
+
+function openAppendModal(data) {
+    currentAppendData = data;
+    document.getElementById('append-doc-id').value = data.id;
+    document.getElementById('append-subtitle').innerText = `ผู้ป่วย: ${data.patientName} (HN: ${data.hn})`;
+    currentExpireDateForAppend = data.expireAt ? new Date(data.expireAt.seconds * 1000).toISOString() : new Date().toISOString();
+    currentCidForAppend = data.cid || "NOCID";
+    
+    const pdfGroup = document.getElementById('append-pdf-group');
+    const zipGroup = document.getElementById('append-zip-group');
+    document.getElementById('append-pdf').value = "";
+    document.getElementById('append-zip').value = "";
+    document.getElementById('append-pdf-size').innerText = "";
+    document.getElementById('append-zip-size').innerText = "";
+    
+    if (!data.pdfFileUrl) pdfGroup.classList.remove('hidden'); else pdfGroup.classList.add('hidden');
+    if (!data.zipFileUrl) zipGroup.classList.remove('hidden'); else zipGroup.classList.add('hidden');
+    
+    document.getElementById('append-modal').classList.remove('hidden');
+}
+
+const appendForm = document.getElementById('append-form');
+if (appendForm) {
+    appendForm.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const docId = document.getElementById('append-doc-id').value;
+        const pdfFile = document.getElementById('append-pdf').files[0];
+        const zipFile = document.getElementById('append-zip').files[0];
+        
+        if (!pdfFile && !zipFile) {
+            alert("กรุณาเลือกไฟล์ที่ต้องการแนบเพิ่มครับ");
+            return;
+        }
+
+        const btnSubmit = document.getElementById('btn-submit-append');
+        btnSubmit.disabled = true;
+        document.getElementById('append-progress-container').classList.remove('hidden');
+
+        try {
+            let updates = {};
+            
+            let pdfPromise = Promise.resolve(null);
+            if (pdfFile) {
+                document.getElementById('append-progress-bar').style.width = '10%';
+                const customPdfName = generateFileName(currentCidForAppend, pdfFile);
+                if (pdfFile.size <= MAX_GAS_SIZE) {
+                    pdfPromise = uploadToGoogleDriveViaGAS(pdfFile, currentExpireDateForAppend, "อัปโหลดผลอ่าน:", 'append-progress-bar', 'append-progress-text', customPdfName);
+                } else {
+                    pdfPromise = uploadToFirebaseStorage(pdfFile, 'pdfs', "อัปโหลดผลอ่าน:", 'append-progress-bar', 'append-progress-text', customPdfName);
+                }
+            }
+            
+            let zipPromise = Promise.resolve(null);
+            if (zipFile) {
+                const customZipName = generateFileName(currentCidForAppend, zipFile);
+                if (zipFile.size <= MAX_GAS_SIZE) {
+                    zipPromise = uploadToGoogleDriveViaGAS(zipFile, currentExpireDateForAppend, "อัปโหลดภาพ:", 'append-progress-bar', 'append-progress-text', customZipName);
+                } else {
+                    zipPromise = uploadToFirebaseStorage(zipFile, 'zips', "อัปโหลดภาพ:", 'append-progress-bar', 'append-progress-text', customZipName);
+                }
+            }
+
+            document.getElementById('append-progress-text').innerText = "กำลังนำส่งไฟล์...";
+            const [finalPdfUrl, finalZipUrl] = await Promise.all([pdfPromise, zipPromise]);
+
+            if (finalPdfUrl) updates.pdfFileUrl = finalPdfUrl;
+            if (finalZipUrl) updates.zipFileUrl = finalZipUrl;
+
+            document.getElementById('append-progress-bar').style.width = '100%';
+            document.getElementById('append-progress-text').innerText = "กำลังอัปเดตข้อมูลเข้าระบบ...";
+            await db.collection("referrals").doc(docId).update(updates);
+
+            document.getElementById('append-progress-text').innerText = "กำลังส่งการแจ้งเตือน LINE และบันทึก Log...";
+            const senderName = getHospitalDisplayName(currentAppendData.senderHospital);
+            const receiverName = getHospitalDisplayName(currentAppendData.receiverHospital);
+            const displayCid = getMaskedCID(currentCidForAppend);
+
+            let fileTypesStr = "";
+            if (pdfFile && zipFile) fileTypesStr = "แนบเพิ่มทั้งภาพและผลอ่าน";
+            else if (pdfFile) fileTypesStr = "แนบผลอ่านเพิ่มเติม";
+            else if (zipFile) fileTypesStr = "แนบภาพการตรวจเพิ่มเติม";
+
+            const lineMsg = `🔔 มีการแนบไฟล์เพิ่มเติม!\n\nผู้ป่วย: ${currentAppendData.patientName}\nHN: ${currentAppendData.hn}\nCID: ${displayCid}\n📂 อัปเดต: ${fileTypesStr}\n\n📤 ต้นทาง: ${senderName}\n📥 ปลายทาง: ${receiverName}\n\nกรุณาตรวจสอบรายละเอียดในระบบ DICOM Hub ครับ`;
+
+            try {
+                fetch(GAS_WEB_APP_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify({ action: "sendLine", message: lineMsg })
+                });
+
+                fetch(GAS_WEB_APP_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify({
+                        action: "logReferral",
+                        timestamp: new Date().toLocaleString('th-TH'),
+                        hn: currentAppendData.hn,
+                        patientName: currentAppendData.patientName,
+                        cid: displayCid,
+                        sender: senderName,
+                        receiver: receiverName,
+                        fileTypes: fileTypesStr
+                    })
+                });
+            } catch (lineErr) {
+                console.log("LINE/Log Error: ", lineErr);
+            }
+
+            alert("แนบไฟล์เพิ่มสำเร็จ!");
+            document.getElementById('append-modal').classList.add('hidden');
+            document.getElementById('append-pdf-size').innerText = "";
+            document.getElementById('append-zip-size').innerText = "";
+            document.getElementById('append-form').reset();
+        } catch (error) { alert("เกิดข้อผิดพลาด: " + error.message); } 
+        finally {
+            btnSubmit.disabled = false;
+            document.getElementById('append-progress-container').classList.add('hidden');
+            document.getElementById('append-progress-bar').style.width = '0%';
+        }
+    });
+}
+</script>
+</body>
+</html>
